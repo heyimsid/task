@@ -1,0 +1,839 @@
+import { useState, useEffect, createContext, useContext } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, updateDoc, getDocs, where, addDoc } from 'firebase/firestore';
+
+// Global Firebase configuration and app ID variables
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+// Context for Firebase services and user data
+const AppContext = createContext();
+
+function AppProvider({ children }) {
+    const [db, setDb] = useState(null);
+    const [auth, setAuth] = useState(null);
+    const [currentUser, setCurrentUser] = useState(null);
+    const [userId, setUserId] = useState(null);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const initFirebase = async () => {
+            try {
+                const app = initializeApp(firebaseConfig);
+                const firestoreDb = getFirestore(app);
+                const firebaseAuth = getAuth(app);
+                setDb(firestoreDb);
+                setAuth(firebaseAuth);
+
+                // Sign in with custom token if available, otherwise anonymously
+                if (initialAuthToken) {
+                    await signInWithCustomToken(firebaseAuth, initialAuthToken);
+                } else {
+                    await signInAnonymously(firebaseAuth);
+                }
+
+                // Listen for authentication state changes
+                const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
+                    if (user) {
+                        setCurrentUser(user);
+                        const currentUserId = user.uid;
+                        setUserId(currentUserId);
+
+                        // Check if user exists in Firestore, if not, create a basic profile
+                        const userDocRef = doc(firestoreDb, `/artifacts/${appId}/users/${currentUserId}/user_data/profile`);
+                        const userDocSnap = await getDoc(userDocRef);
+
+                        if (!userDocSnap.exists()) {
+                            // New user, create their profile
+                            await setDoc(userDocRef, {
+                                name: user.email ? user.email.split('@')[0] : `User-${currentUserId.substring(0, 5)}`,
+                                email: user.email || '',
+                                totalPoints: 0,
+                                isAdmin: false, // Default to false
+                                profilePicUrl: `https://placehold.co/150x150/a78bfa/ffffff?text=${user.email ? user.email[0].toUpperCase() : 'U'}`,
+                                createdAt: new Date().toISOString()
+                            });
+                            setIsAdmin(false);
+                        } else {
+                            // Existing user
+                            const userData = userDocSnap.data();
+                            setIsAdmin(userData.isAdmin || false);
+                        }
+                    } else {
+                        setCurrentUser(null);
+                        setUserId(null);
+                        setIsAdmin(false);
+                    }
+                    setIsLoading(false);
+                });
+
+                return () => unsubscribe(); // Cleanup auth listener
+            } catch (error) {
+                console.error("Error initializing Firebase or signing in:", error);
+                setIsLoading(false);
+            }
+        };
+
+        initFirebase();
+    }, []); // Run only once on component mount
+
+    return (
+        <AppContext.Provider value={{ db, auth, currentUser, userId, isAdmin, isLoading }}>
+            {children}
+        </AppContext.Provider>
+    );
+}
+
+// Custom hook to use app context
+function useAppContext() {
+    return useContext(AppContext);
+}
+
+// Modal Component for alerts and confirmations
+function Modal({ title, message, isOpen, onClose, onConfirm, showConfirmButton = false }) {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm transform transition-all duration-300 scale-100 opacity-100">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">{title}</h3>
+                <p className="text-gray-600 mb-6">{message}</p>
+                <div className="flex justify-end space-x-3">
+                    <button
+                        onClick={onClose}
+                        className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-5 rounded-lg transition-colors duration-200 shadow-sm"
+                    >
+                        Close
+                    </button>
+                    {showConfirmButton && (
+                        <button
+                            onClick={onConfirm}
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors duration-200 shadow-md"
+                        >
+                            Confirm
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// Login/Signup Page
+function LoginPage({ onLoginSuccess }) {
+    const { auth, db, isLoading } = useAppContext();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [name, setName] = useState('');
+    const [isSignup, setIsSignup] = useState(false);
+    const [error, setError] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalMessage, setModalMessage] = useState('');
+    const [modalTitle, setModalTitle] = useState('');
+
+    const handleAuth = async (e) => {
+        e.preventDefault();
+        setError('');
+        setIsModalOpen(false);
+
+        if (!auth || isLoading) return;
+
+        try {
+            let userCredential;
+            if (isSignup) {
+                userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                // After signup, save user profile to Firestore
+                const userDocRef = doc(db, `/artifacts/${appId}/users/${userCredential.user.uid}/user_data/profile`);
+                await setDoc(userDocRef, {
+                    name: name,
+                    email: email,
+                    totalPoints: 0,
+                    isAdmin: false,
+                    profilePicUrl: `https://placehold.co/150x150/a78bfa/ffffff?text=${name ? name[0].toUpperCase() : 'U'}`,
+                    createdAt: new Date().toISOString()
+                });
+                setModalTitle("Signup Successful!");
+                setModalMessage("Your account has been created. You can now log in.");
+                setIsModalOpen(true);
+                setIsSignup(false); // Switch to login view after signup
+                setEmail('');
+                setPassword('');
+                setName('');
+            } else {
+                userCredential = await signInWithEmailAndPassword(auth, email, password);
+                // Special admin login check:
+                if (email === 'admin@example.com' && password === 'adminpass') {
+                    const userDocRef = doc(db, `/artifacts/${appId}/users/${userCredential.user.uid}/user_data/profile`);
+                    await updateDoc(userDocRef, { isAdmin: true });
+                }
+                onLoginSuccess(); // Redirect to home on successful login
+            }
+        } catch (err) {
+            console.error("Authentication Error:", err);
+            setError(err.message);
+            setModalTitle("Authentication Error");
+            setModalMessage(err.message);
+            setIsModalOpen(true);
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <LoadingSpinner />
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-700 p-4">
+            <Modal
+                title={modalTitle}
+                message={modalMessage}
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+            />
+            <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
+                <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">
+                    {isSignup ? 'Sign Up' : 'Log In'}
+                </h2>
+                <form onSubmit={handleAuth} className="space-y-5">
+                    {isSignup && (
+                        <div>
+                            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">
+                                Name
+                            </label>
+                            <input
+                                id="name"
+                                type="text"
+                                className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                placeholder="Your Name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                required
+                            />
+                        </div>
+                    )}
+                    <div>
+                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
+                            Email
+                        </label>
+                        <input
+                            id="email"
+                            type="email"
+                            className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            placeholder="Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
+                            Password
+                        </label>
+                        <input
+                            id="password"
+                            type="password"
+                            className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                    </div>
+                    {error && <p className="text-red-500 text-sm italic">{error}</p>}
+                    <button
+                        type="submit"
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition-colors duration-200 shadow-lg transform hover:scale-105 active:scale-95"
+                    >
+                        {isSignup ? 'Sign Up' : 'Log In'}
+                    </button>
+                </form>
+                <p className="text-center text-gray-600 text-sm mt-6">
+                    {isSignup ? 'Already have an account?' : "Don't have an account?"}
+                    <button
+                        onClick={() => setIsSignup(!isSignup)}
+                        className="text-blue-600 hover:text-blue-800 font-semibold ml-2 transition-colors duration-200"
+                    >
+                        {isSignup ? 'Log In' : 'Sign Up'}
+                    </button>
+                </p>
+                {/* Admin Access Info for easy testing */}
+                <p className="text-center text-gray-500 text-xs mt-4">
+                    Admin access: email 'admin@example.com', password 'adminpass'
+                </p>
+            </div>
+        </div>
+    );
+}
+
+// Loading Spinner Component
+function LoadingSpinner() {
+    return (
+        <div className="flex justify-center items-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+        </div>
+    );
+}
+
+// Home Page
+function HomePage({ onNavigate }) {
+    const { db, userId, isAdmin } = useAppContext();
+    const [leaderboard, setLeaderboard] = useState([]);
+    const [currentUserProfile, setCurrentUserProfile] = useState(null);
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+    useEffect(() => {
+        if (!db || !userId) return;
+
+        // Fetch current user's profile
+        const userProfileRef = doc(db, `/artifacts/${appId}/users/${userId}/user_data/profile`);
+        const unsubscribeProfile = onSnapshot(userProfileRef, (docSnap) => {
+            if (docSnap.exists()) {
+                setCurrentUserProfile(docSnap.data());
+            }
+        }, (error) => console.error("Error fetching user profile:", error));
+
+        // Fetch leaderboard
+        const usersCollectionRef = collection(db, `/artifacts/${appId}/public/data/users`);
+        const unsubscribeLeaderboard = onSnapshot(usersCollectionRef, (snapshot) => {
+            const users = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                // Ensure data has totalPoints and name
+                if (data.totalPoints !== undefined && data.name) {
+                    users.push({ id: doc.id, ...data });
+                }
+            });
+            // Sort in memory as orderBy() needs indexes and can cause runtime errors
+            users.sort((a, b) => b.totalPoints - a.totalPoints);
+            setLeaderboard(users);
+        }, (error) => console.error("Error fetching leaderboard:", error));
+
+        return () => {
+            unsubscribeProfile();
+            unsubscribeLeaderboard();
+        }; // Cleanup listeners
+    }, [db, userId]);
+
+    // Function to handle opening the profile modal
+    const handleProfileClick = () => {
+        setIsProfileModalOpen(true);
+    };
+
+    // Placeholder image generation for profile pic
+    const getRandomProfilePicUrl = () => {
+        const size = 150;
+        const colors = ['b794f4', 'a8c0ea', '81b214', 'ffc107', 'ff5722'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        const initial = currentUserProfile?.name ? currentUserProfile.name[0].toUpperCase() : 'U';
+        return `https://placehold.co/${size}x${size}/${randomColor}/ffffff?text=${initial}`;
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-100 flex flex-col items-center p-4">
+            <Modal
+                title="Your Profile"
+                message={currentUserProfile ?
+                    `Name: ${currentUserProfile.name}\nTotal Points: ${currentUserProfile.totalPoints}\nUser ID: ${userId}`
+                    : "Loading profile..."
+                }
+                isOpen={isProfileModalOpen}
+                onClose={() => setIsProfileModalOpen(false)}
+            />
+
+            <header className="w-full max-w-4xl bg-white rounded-xl shadow-md p-4 flex justify-between items-center mb-6 mt-4">
+                <h1 className="text-2xl font-bold text-gray-800">Task Monitor</h1>
+                <div className="flex items-center space-x-4">
+                    {currentUserProfile && (
+                        <button onClick={handleProfileClick} className="relative group">
+                            <img
+                                src={currentUserProfile.profilePicUrl || getRandomProfilePicUrl()}
+                                alt="Profile"
+                                className="w-10 h-10 rounded-full border-2 border-blue-500 object-cover transform transition-transform duration-200 group-hover:scale-110"
+                            />
+                            <span className="absolute bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2">
+                                View Profile
+                            </span>
+                        </button>
+                    )}
+                    <button
+                        onClick={() => onNavigate('login')} // Simple logout by going back to login
+                        className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 shadow-md"
+                    >
+                        Log Out
+                    </button>
+                </div>
+            </header>
+
+            <main className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Current Task Section */}
+                <section className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-blue-500">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Current Ongoing Task</h2>
+                    <div className="bg-blue-50 p-4 rounded-lg flex flex-col items-center justify-center text-center">
+                        <p className="text-xl font-semibold text-blue-800 mb-3">Python Programming</p>
+                        <p className="text-gray-600 mb-4">Master Python concepts and share your notes!</p>
+                        <button
+                            onClick={() => onNavigate('task')}
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200 shadow-md transform hover:scale-105 active:scale-95"
+                        >
+                            Go to Task
+                        </button>
+                    </div>
+                </section>
+
+                {/* Leaderboard Section */}
+                <section className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-green-500">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center justify-between">
+                        Leaderboard
+                        <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path></svg>
+                    </h2>
+                    <ul className="divide-y divide-gray-200">
+                        {leaderboard.length > 0 ? (
+                            leaderboard.map((user, index) => (
+                                <li key={user.id} className="py-3 flex items-center justify-between">
+                                    <span className="font-semibold text-gray-700">#{index + 1} {user.name}</span>
+                                    <span className="text-blue-600 font-bold">{user.totalPoints} pts</span>
+                                </li>
+                            ))
+                        ) : (
+                            <li className="py-3 text-center text-gray-500">No participants yet.</li>
+                        )}
+                    </ul>
+                </section>
+
+                {/* Admin Button (only for admins) */}
+                {isAdmin && (
+                    <section className="md:col-span-2 bg-white rounded-xl shadow-lg p-6 border-t-4 border-red-500 text-center">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-4">Admin Panel</h2>
+                        <p className="text-gray-600 mb-4">Manage users and award points.</p>
+                        <button
+                            onClick={() => onNavigate('admin')}
+                            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200 shadow-md transform hover:scale-105 active:scale-95"
+                        >
+                            Go to Admin Panel
+                        </button>
+                    </section>
+                )}
+            </main>
+        </div>
+    );
+}
+
+// Task Page (Python Programming)
+function TaskPage({ onNavigate }) {
+    const { db, userId } = useAppContext();
+    const [userTaskPoints, setUserTaskPoints] = useState(0);
+    const [hasUploadedNotes, setHasUploadedNotes] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalTitle, setModalTitle] = useState('');
+    const [modalMessage, setModalMessage] = useState('');
+
+    const taskName = "Python Programming"; // Fixed task name for this example
+    const taskId = "python-programming"; // Fixed task ID
+
+    useEffect(() => {
+        if (!db || !userId) return;
+
+        // Listen for user's submission for this task
+        const submissionDocRef = doc(db, `/artifacts/${appId}/users/${userId}/task_submissions/${taskId}`);
+        const unsubscribe = onSnapshot(submissionDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setUserTaskPoints(data.pointsAwarded || 0);
+                setHasUploadedNotes(data.notesUploaded || false);
+            } else {
+                setUserTaskPoints(0);
+                setHasUploadedNotes(false);
+            }
+        }, (error) => console.error("Error fetching task submission:", error));
+
+        return () => unsubscribe();
+    }, [db, userId, taskId]);
+
+    const handleUploadNotes = async () => {
+        if (!db || !userId) return;
+
+        try {
+            // Update user's submission for this task
+            const submissionDocRef = doc(db, `/artifacts/${appId}/users/${userId}/task_submissions/${taskId}`);
+            await setDoc(submissionDocRef, {
+                userId: userId,
+                taskId: taskId,
+                notesUploaded: true,
+                pointsAwarded: (userTaskPoints || 0) + 5, // Award 5 points for notes
+                lastUploadDate: new Date().toISOString()
+            }, { merge: true }); // Merge to update existing or create new
+
+            // Update user's total points in their profile
+            const userProfileRef = doc(db, `/artifacts/${appId}/users/${userId}/user_data/profile`);
+            const userProfileSnap = await getDoc(userProfileRef);
+            let currentTotalPoints = 0;
+            if (userProfileSnap.exists()) {
+                currentTotalPoints = userProfileSnap.data().totalPoints || 0;
+            }
+
+            await updateDoc(userProfileRef, {
+                totalPoints: currentTotalPoints + 5
+            });
+
+            // Also update the public user data for leaderboard
+            const publicUserDocRef = doc(db, `/artifacts/${appId}/public/data/users/${userId}`);
+            await setDoc(publicUserDocRef, {
+                name: (userProfileSnap.exists() ? userProfileSnap.data().name : `User-${userId.substring(0, 5)}`),
+                totalPoints: currentTotalPoints + 5,
+                isAdmin: (userProfileSnap.exists() ? userProfileSnap.data().isAdmin : false)
+            }, { merge: true });
+
+            setModalTitle("Notes Uploaded!");
+            setModalMessage("You have successfully uploaded your notes and gained 5 points!");
+            setIsModalOpen(true);
+            setHasUploadedNotes(true); // Update state immediately
+        } catch (error) {
+            console.error("Error uploading notes:", error);
+            setModalTitle("Upload Error");
+            setModalMessage("Failed to upload notes: " + error.message);
+            setIsModalOpen(true);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-100 p-4 flex flex-col items-center">
+            <Modal
+                title={modalTitle}
+                message={modalMessage}
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+            />
+
+            <header className="w-full max-w-4xl bg-white rounded-xl shadow-md p-4 flex justify-between items-center mb-6 mt-4">
+                <button
+                    onClick={() => onNavigate('home')}
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg flex items-center transition-colors duration-200 shadow-sm"
+                >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Back to Home
+                </button>
+                <h1 className="text-2xl font-bold text-gray-800">Task Details: {taskName}</h1>
+            </header>
+
+            <main className="w-full max-w-4xl bg-white rounded-xl shadow-lg p-6 border-t-4 border-blue-500">
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">Your Progress</h2>
+                <div className="flex flex-col sm:flex-row justify-around items-center bg-blue-50 p-4 rounded-lg mb-6">
+                    <div className="text-center mb-4 sm:mb-0">
+                        <p className="text-lg text-gray-600">Your points for this task:</p>
+                        <p className="text-4xl font-extrabold text-blue-700">{userTaskPoints}</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-lg text-gray-600">Notes Uploaded:</p>
+                        <p className={`text-4xl font-extrabold ${hasUploadedNotes ? 'text-green-600' : 'text-red-500'}`}>
+                            {hasUploadedNotes ? 'Yes' : 'No'}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="border-t border-gray-200 pt-6 mt-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Upload Notes</h2>
+                    <p className="text-gray-600 mb-4">
+                        Upload your Python programming notes (PDF format). You will receive 5 points for each valid upload.
+                        <br/><em className="text-sm text-gray-500">
+                            (Note: Actual PDF file upload is simulated; clicking the button awards points.)
+                        </em>
+                    </p>
+                    <button
+                        onClick={handleUploadNotes}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md transform hover:scale-105 active:scale-95"
+                    >
+                        Upload Notes (Get 5 Points!)
+                    </button>
+                </div>
+
+                <div className="border-t border-gray-200 pt-6 mt-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Quiz / Live Summarize (Admin Awarded)</h2>
+                    <p className="text-gray-600 mb-4">
+                        Participate in quizzes or live summary sessions to earn additional points. These points will be awarded by the admin. Check back for updates!
+                    </p>
+                    <button
+                        onClick={() => {
+                            setModalTitle("Feature Coming Soon");
+                            setModalMessage("The Quiz/Live Summarize feature will be implemented by the admin soon!");
+                            setIsModalOpen(true);
+                        }}
+                        className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md transform hover:scale-105 active:scale-95"
+                    >
+                        Participate
+                    </button>
+                </div>
+            </main>
+        </div>
+    );
+}
+
+
+// Admin Page
+function AdminPage({ onNavigate }) {
+    const { db, isAdmin, userId } = useAppContext();
+    const [submissions, setSubmissions] = useState([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalTitle, setModalTitle] = useState('');
+    const [modalMessage, setModalMessage] = useState('');
+
+    useEffect(() => {
+        if (!db || !isAdmin) return;
+
+        // Fetch all users who have submitted notes for the Python task
+        const fetchSubmissions = async () => {
+            try {
+                // First, get all user IDs from the public users collection
+                const usersCollectionRef = collection(db, `/artifacts/${appId}/public/data/users`);
+                const userDocs = await getDocs(usersCollectionRef);
+                const allUserIds = userDocs.docs.map(doc => doc.id);
+
+                const taskSubmissions = [];
+                for (const uId of allUserIds) {
+                    const submissionDocRef = doc(db, `/artifacts/${appId}/users/${uId}/task_submissions/python-programming`);
+                    const submissionSnap = await getDoc(submissionDocRef);
+                    if (submissionSnap.exists()) {
+                        const data = submissionSnap.data();
+                        // Only add if notes were uploaded or points were manually awarded by admin
+                        if (data.notesUploaded || (data.pointsAwarded && data.pointsAwarded > 5)) {
+                             // Fetch user's name from their main profile
+                            const userProfileRef = doc(db, `/artifacts/${appId}/users/${uId}/user_data/profile`);
+                            const userProfileSnap = await getDoc(userProfileRef);
+                            const userName = userProfileSnap.exists() ? userProfileSnap.data().name : `User-${uId.substring(0,5)}`;
+                            taskSubmissions.push({ ...data, userId: uId, userName: userName });
+                        }
+                    }
+                }
+                setSubmissions(taskSubmissions);
+            } catch (error) {
+                console.error("Error fetching submissions:", error);
+                setModalTitle("Error");
+                setModalMessage("Failed to fetch submissions: " + error.message);
+                setIsModalOpen(true);
+            }
+        };
+
+        const unsubscribe = onSnapshot(collection(db, `/artifacts/${appId}/users`), () => {
+            fetchSubmissions(); // Re-fetch all submissions if any user data changes
+        });
+
+        return () => unsubscribe();
+    }, [db, isAdmin]);
+
+
+    const handleAwardPoints = async (submissionUserId, currentTaskPoints, pointsToAdd = 5) => {
+        if (!db) return;
+
+        try {
+            // 1. Update the specific task submission for the user
+            const submissionDocRef = doc(db, `/artifacts/${appId}/users/${submissionUserId}/task_submissions/python-programming`);
+            await updateDoc(submissionDocRef, {
+                pointsAwarded: currentTaskPoints + pointsToAdd,
+                lastAwardedByAdmin: new Date().toISOString()
+            });
+
+            // 2. Update the user's total points in their private profile
+            const userProfileRef = doc(db, `/artifacts/${appId}/users/${submissionUserId}/user_data/profile`);
+            const userProfileSnap = await getDoc(userProfileRef);
+            let currentTotalPoints = 0;
+            if (userProfileSnap.exists()) {
+                currentTotalPoints = userProfileSnap.data().totalPoints || 0;
+            }
+            await updateDoc(userProfileRef, {
+                totalPoints: currentTotalPoints + pointsToAdd
+            });
+
+            // 3. Update the user's total points in the public data for leaderboard
+            const publicUserDocRef = doc(db, `/artifacts/${appId}/public/data/users/${submissionUserId}`);
+            await updateDoc(publicUserDocRef, {
+                totalPoints: currentTotalPoints + pointsToAdd
+            });
+
+            setModalTitle("Points Awarded!");
+            setModalMessage(`Successfully awarded ${pointsToAdd} points to user ${submissionUserId.substring(0, 5)}...`);
+            setIsModalOpen(true);
+
+            // Re-fetch submissions to update the list
+            const usersCollectionRef = collection(db, `/artifacts/${appId}/public/data/users`);
+            const userDocs = await getDocs(usersCollectionRef);
+            const allUserIds = userDocs.docs.map(doc => doc.id);
+
+            const updatedSubmissions = [];
+            for (const uId of allUserIds) {
+                const subDocRef = doc(db, `/artifacts/${appId}/users/${uId}/task_submissions/python-programming`);
+                const subSnap = await getDoc(subDocRef);
+                if (subSnap.exists()) {
+                    const data = subSnap.data();
+                    if (data.notesUploaded || (data.pointsAwarded && data.pointsAwarded > 5)) {
+                        const userProfileRef = doc(db, `/artifacts/${appId}/users/${uId}/user_data/profile`);
+                        const userProfileSnap = await getDoc(userProfileRef);
+                        const userName = userProfileSnap.exists() ? userProfileSnap.data().name : `User-${uId.substring(0,5)}`;
+                        updatedSubmissions.push({ ...data, userId: uId, userName: userName });
+                    }
+                }
+            }
+            setSubmissions(updatedSubmissions);
+
+        } catch (error) {
+            console.error("Error awarding points:", error);
+            setModalTitle("Error");
+            setModalMessage("Failed to award points: " + error.message);
+            setIsModalOpen(true);
+        }
+    };
+
+    if (!isAdmin) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-red-100 p-4">
+                <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+                    <h2 className="text-2xl font-bold text-red-700 mb-4">Access Denied</h2>
+                    <p className="text-gray-600 mb-6">You do not have administrative privileges to view this page.</p>
+                    <button
+                        onClick={() => onNavigate('home')}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-200 shadow-md"
+                    >
+                        Back to Home
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gray-100 p-4 flex flex-col items-center">
+            <Modal
+                title={modalTitle}
+                message={modalMessage}
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+            />
+
+            <header className="w-full max-w-4xl bg-white rounded-xl shadow-md p-4 flex justify-between items-center mb-6 mt-4">
+                <button
+                    onClick={() => onNavigate('home')}
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg flex items-center transition-colors duration-200 shadow-sm"
+                >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Back to Home
+                </button>
+                <h1 className="text-2xl font-bold text-gray-800">Admin Panel</h1>
+            </header>
+
+            <main className="w-full max-w-4xl bg-white rounded-xl shadow-lg p-6 border-t-4 border-red-500">
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">Task Submissions & Point Awards</h2>
+                <p className="text-gray-600 mb-6">
+                    Review user submissions for "Python Programming" and manually award points for quizzes or other tasks.
+                </p>
+
+                {submissions.length === 0 ? (
+                    <p className="text-center text-gray-500 py-8">No submissions to review yet.</p>
+                ) : (
+                    <ul className="divide-y divide-gray-200">
+                        {submissions.map((sub) => (
+                            <li key={sub.userId} className="py-4 flex flex-col sm:flex-row justify-between items-center">
+                                <div className="mb-2 sm:mb-0">
+                                    <p className="font-semibold text-gray-800">{sub.userName} (<span className="text-sm text-gray-500">ID: {sub.userId.substring(0, 5)}...</span>)</p>
+                                    <p className="text-gray-600 text-sm">Task: {sub.taskId === 'python-programming' ? 'Python Programming' : sub.taskId}</p>
+                                    <p className="text-gray-600 text-sm">Notes Uploaded: {sub.notesUploaded ? 'Yes' : 'No'}</p>
+                                    <p className="text-blue-600 font-bold">Current Task Points: {sub.pointsAwarded || 0}</p>
+                                </div>
+                                <div className="flex space-x-2 mt-2 sm:mt-0">
+                                    <button
+                                        onClick={() => handleAwardPoints(sub.userId, sub.pointsAwarded || 0, 5)}
+                                        className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors duration-200 shadow-md transform hover:scale-105 active:scale-95"
+                                    >
+                                        Award 5 Pts (Quiz)
+                                    </button>
+                                    <button
+                                        onClick={() => handleAwardPoints(sub.userId, sub.pointsAwarded || 0, 10)}
+                                        className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors duration-200 shadow-md transform hover:scale-105 active:scale-95"
+                                    >
+                                        Award 10 Pts (Summarize)
+                                    </button>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </main>
+        </div>
+    );
+}
+
+// Main App Component
+export default function App() {
+    const { currentUser, isLoading, isAdmin } = useAppContext();
+    const [currentPage, setCurrentPage] = useState('login'); // 'login', 'home', 'task', 'admin'
+
+    useEffect(() => {
+        // Redirect to home if user is logged in and not on login page
+        if (!isLoading && currentUser && currentPage === 'login') {
+            setCurrentPage('home');
+        }
+        // Redirect to login if not logged in and not on login page
+        if (!isLoading && !currentUser && currentPage !== 'login') {
+            setCurrentPage('login');
+        }
+    }, [currentUser, isLoading, currentPage]);
+
+    const handleLoginSuccess = () => {
+        setCurrentPage('home');
+    };
+
+    const handleNavigate = (page) => {
+        setCurrentPage(page);
+    };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                <LoadingSpinner />
+            </div>
+        );
+    }
+
+    // Render components based on current page and auth status
+    let content;
+    switch (currentPage) {
+        case 'login':
+            content = <LoginPage onLoginSuccess={handleLoginSuccess} />;
+            break;
+        case 'home':
+            content = currentUser ? <HomePage onNavigate={handleNavigate} /> : <LoginPage onLoginSuccess={handleLoginSuccess} />;
+            break;
+        case 'task':
+            content = currentUser ? <TaskPage onNavigate={handleNavigate} /> : <LoginPage onLoginSuccess={handleLoginSuccess} />;
+            break;
+        case 'admin':
+            content = currentUser && isAdmin ? <AdminPage onNavigate={handleNavigate} /> : (
+                // If not admin, or not logged in, show access denied on admin page
+                <div className="min-h-screen flex items-center justify-center bg-red-100 p-4">
+                    <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+                        <h2 className="text-2xl font-bold text-red-700 mb-4">Access Denied</h2>
+                        <p className="text-gray-600 mb-6">You do not have administrative privileges to view this page.</p>
+                        <button
+                            onClick={() => handleNavigate('home')}
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-200 shadow-md"
+                        >
+                            Back to Home
+                        </button>
+                    </div>
+                </div>
+            );
+            break;
+        default:
+            content = <LoginPage onLoginSuccess={handleLoginSuccess} />;
+    }
+
+    return (
+        <AppProvider>
+            {content}
+        </AppProvider>
+    );
+}
+
