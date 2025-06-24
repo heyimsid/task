@@ -7,27 +7,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Mobile optimizations */
-        .btn-hover {
-            transition: all 0.2s ease;
-        }
-        .btn-hover:active {
-            transform: scale(0.98);
-        }
-        .touch-target {
-            min-height: 48px;
-            min-width: 48px;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        .fade-in {
-            animation: fadeIn 0.3s ease-in;
-        }
+        .btn-hover:active { transform: scale(0.98); }
+        .touch-target { min-height: 48px; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
     <div id="app" class="container mx-auto px-4 py-6 max-w-4xl">
+
         <!-- Auth Screen -->
         <div id="auth-screen" class="min-h-screen flex items-center justify-center fade-in">
             <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
@@ -39,13 +27,13 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Email</label>
-                        <input type="email" id="email" value="admin@example.com" class="w-full p-3 border rounded-lg touch-target">
+                        <input type="email" id="email" class="w-full p-3 border rounded-lg touch-target">
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Password</label>
-                        <input type="password" id="password" value="adminpass" class="w-full p-3 border rounded-lg touch-target">
+                        <input type="password" id="password" class="w-full p-3 border rounded-lg touch-target">
                     </div>
-                    <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg font-medium hover:bg-blue-700 transition btn-hover touch-target">
+                    <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg font-medium btn-hover touch-target">
                         Login
                     </button>
                 </form>
@@ -53,9 +41,6 @@
                     <span id="toggle-auth" class="text-blue-600 cursor-pointer hover:underline">
                         Create new account
                     </span>
-                </p>
-                <p class="text-center text-sm text-gray-500 mt-2">
-                    Admin: admin@example.com / adminpass
                 </p>
             </div>
         </div>
@@ -75,40 +60,63 @@
                 </div>
             </header>
 
-            <!-- Admin Panel (visible only to admin) -->
-            <div id="admin-panel" class="bg-white p-6 rounded-xl shadow-md mb-4 hidden">
-                <h3 class="text-lg font-semibold mb-3 text-red-600">Admin Panel</h3>
-                <div class="space-y-3">
-                    <button id="add-points-btn" class="w-full bg-green-600 text-white p-2 rounded-lg btn-hover touch-target">
-                        Add 10 Points to All Users
-                    </button>
-                    <button id="reset-points-btn" class="w-full bg-red-600 text-white p-2 rounded-lg btn-hover touch-target">
-                        Reset All Points
-                    </button>
+            <!-- Normal User Content -->
+            <div id="user-content">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-lg font-semibold mb-3">Current Task</h3>
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <p class="font-medium text-blue-800">Python Programming</p>
+                            <p class="text-gray-600 my-2">Complete the exercises and submit your notes</p>
+                            <button id="go-to-task" class="bg-blue-600 text-white px-4 py-2 rounded-lg w-full mt-2 btn-hover touch-target">
+                                Start Task
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-lg font-semibold mb-3">Leaderboard</h3>
+                        <ul id="leaderboard" class="divide-y">
+                            <!-- Filled by JavaScript -->
+                        </ul>
+                    </div>
                 </div>
             </div>
 
-            <!-- Task Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-white p-6 rounded-xl shadow-md task-card">
-                    <h3 class="text-lg font-semibold mb-3">Current Task</h3>
-                    <div class="bg-blue-50 p-4 rounded-lg">
-                        <p class="font-medium text-blue-800">Python Programming</p>
-                        <p class="text-gray-600 my-2">Complete the exercises and submit your notes</p>
-                        <button id="go-to-task" class="bg-blue-600 text-white px-4 py-2 rounded-lg w-full mt-2 btn-hover touch-target">
-                            Start Task
-                        </button>
+            <!-- Admin Content (hidden by default) -->
+            <div id="admin-content" class="hidden">
+                <div class="bg-white p-6 rounded-xl shadow-md mb-6">
+                    <h2 class="text-xl font-bold mb-4 text-purple-700">Admin Dashboard</h2>
+                    
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold mb-3">User Management</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-100">
+                                        <th class="p-3 text-left">User</th>
+                                        <th class="p-3 text-left">Points</th>
+                                        <th class="p-3 text-left">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-users-list">
+                                    <!-- Filled by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
 
-                <div class="bg-white p-6 rounded-xl shadow-md task-card">
-                    <h3 class="text-lg font-semibold mb-3">Leaderboard</h3>
-                    <ul id="leaderboard" class="divide-y">
-                        <li class="py-2 flex justify-between">
-                            <span>1. You</span>
-                            <span class="font-bold">0 pts</span>
-                        </li>
-                    </ul>
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold">Quick Actions</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button id="admin-add-points" class="bg-green-600 text-white p-3 rounded-lg btn-hover touch-target">
+                                Add 5 Points to All
+                            </button>
+                            <button id="admin-reset-points" class="bg-red-600 text-white p-3 rounded-lg btn-hover touch-target">
+                                Reset All Points
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -154,12 +162,28 @@
         </div>
     </div>
 
-    <!-- JavaScript -->
     <script>
         // App State
         const state = {
-            user: null,
-            isAdmin: false,
+            users: [
+                { 
+                    id: 'admin1',
+                    email: 'admin@example.com',
+                    password: 'adminpass',
+                    name: 'Admin',
+                    isAdmin: true,
+                    points: 0
+                },
+                {
+                    id: 'user1',
+                    email: 'user@example.com',
+                    password: 'userpass',
+                    name: 'John Doe',
+                    isAdmin: false,
+                    points: 0
+                }
+            ],
+            currentUser: null,
             tasks: [
                 {
                     id: 'python',
@@ -167,18 +191,12 @@
                     points: 0,
                     completed: false
                 }
-            ],
-            leaderboard: [
-                { name: 'You', points: 0 }
-            ],
-            adminCredentials: {
-                email: 'admin@example.com',
-                password: 'adminpass'
-            }
+            ]
         };
 
         // DOM Elements
         const elements = {
+            // Auth elements
             authScreen: document.getElementById('auth-screen'),
             mainApp: document.getElementById('main-app'),
             taskScreen: document.getElementById('task-screen'),
@@ -189,16 +207,24 @@
             logoutBtn: document.getElementById('logout-btn'),
             profileBtn: document.getElementById('profile-btn'),
             profileInitial: document.getElementById('profile-initial'),
+            
+            // Task elements
             goToTask: document.getElementById('go-to-task'),
             backBtn: document.getElementById('back-btn'),
             taskNotes: document.getElementById('task-notes'),
             submitTask: document.getElementById('submit-task'),
             taskPoints: document.getElementById('task-points'),
             taskCompleted: document.getElementById('task-completed'),
+            
+            // Leaderboard
             leaderboard: document.getElementById('leaderboard'),
-            adminPanel: document.getElementById('admin-panel'),
-            addPointsBtn: document.getElementById('add-points-btn'),
-            resetPointsBtn: document.getElementById('reset-points-btn')
+            
+            // Admin elements
+            userContent: document.getElementById('user-content'),
+            adminContent: document.getElementById('admin-content'),
+            adminUsersList: document.getElementById('admin-users-list'),
+            adminAddPoints: document.getElementById('admin-add-points'),
+            adminResetPoints: document.getElementById('admin-reset-points')
         };
 
         // Auth Functions
@@ -209,15 +235,28 @@
             const password = document.getElementById('password').value;
             const name = document.getElementById('name').value || 'User';
 
-            // Check for admin credentials
-            if (email === state.adminCredentials.email && password === state.adminCredentials.password) {
-                state.user = { email, name: 'Admin' };
-                state.isAdmin = true;
-                showToast('Admin login successful!', 'green');
+            const user = state.users.find(u => u.email === email && u.password === password);
+            
+            if (!user) {
+                if (document.getElementById('name-field').classList.contains('hidden')) {
+                    showToast('Invalid credentials', 'red');
+                    return;
+                }
+                // Register new user
+                const newUser = {
+                    id: 'user' + Date.now(),
+                    email,
+                    password,
+                    name,
+                    isAdmin: false,
+                    points: 0
+                };
+                state.users.push(newUser);
+                state.currentUser = newUser;
+                showToast('Account created!', 'green');
             } else {
-                state.user = { email, name };
-                state.isAdmin = false;
-                showToast('Login successful!', 'green');
+                state.currentUser = user;
+                showToast(`Welcome back ${user.name}!`, 'green');
             }
 
             renderMainApp();
@@ -231,8 +270,7 @@
         }
 
         function logout() {
-            state.user = null;
-            state.isAdmin = false;
+            state.currentUser = null;
             showToast('Logged out successfully!', 'blue');
             renderAuthScreen();
         }
@@ -245,13 +283,16 @@
         }
 
         function submitTask() {
-            if (state.tasks[0].completed) return;
+            if (state.currentUser.tasks?.[0]?.completed) return;
             
-            state.tasks[0].completed = true;
-            state.tasks[0].points = 5;
-            state.leaderboard[0].points += 5;
+            // Update current user's task status
+            if (!state.currentUser.tasks) state.currentUser.tasks = [...state.tasks];
+            state.currentUser.tasks[0].completed = true;
+            state.currentUser.tasks[0].points = 5;
+            state.currentUser.points += 5;
             
             renderTaskScreen();
+            renderMainApp();
             showToast('Task submitted successfully! +5 points', 'green');
         }
 
@@ -262,23 +303,59 @@
         }
 
         // Admin Functions
-        function addPointsToAll() {
-            state.leaderboard.forEach(user => {
-                user.points += 10;
-            });
-            renderMainApp();
-            showToast('Added 10 points to all users!', 'green');
+        function renderAdminDashboard() {
+            // Filter out admin users from the list
+            const regularUsers = state.users.filter(user => !user.isAdmin);
+            
+            elements.adminUsersList.innerHTML = regularUsers.map(user => `
+                <tr class="border-t">
+                    <td class="p-3">${user.name} (${user.email})</td>
+                    <td class="p-3">${user.points}</td>
+                    <td class="p-3">
+                        <button onclick="adminAddUserPoints('${user.id}', 5)" class="text-blue-600 hover:text-blue-800 mr-2">
+                            +5
+                        </button>
+                        <button onclick="adminAddUserPoints('${user.id}', 10)" class="text-green-600 hover:text-green-800">
+                            +10
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
         }
 
-        function resetAllPoints() {
-            state.leaderboard.forEach(user => {
-                user.points = 0;
+        function adminAddPointsToAll() {
+            state.users.forEach(user => {
+                if (!user.isAdmin) {
+                    user.points += 5;
+                    if (user.tasks?.[0]) user.tasks[0].points += 5;
+                }
             });
-            state.tasks[0].points = 0;
-            state.tasks[0].completed = false;
             renderMainApp();
-            renderTaskScreen();
-            showToast('All points have been reset!', 'red');
+            showToast('Added 5 points to all users!', 'green');
+        }
+
+        function adminResetAllPoints() {
+            state.users.forEach(user => {
+                if (!user.isAdmin) {
+                    user.points = 0;
+                    if (user.tasks?.[0]) {
+                        user.tasks[0].points = 0;
+                        user.tasks[0].completed = false;
+                    }
+                }
+            });
+            renderMainApp();
+            showToast('Reset all points!', 'red');
+        }
+
+        function adminAddUserPoints(userId, points) {
+            const user = state.users.find(u => u.id === userId);
+            if (user) {
+                user.points += points;
+                if (user.tasks?.[0]) user.tasks[0].points += points;
+                renderMainApp();
+                showToast(`Added ${points} points to ${user.name}`, 'green');
+            }
         }
 
         // Render Functions
@@ -295,29 +372,44 @@
             elements.taskScreen.classList.add('hidden');
             
             // Update profile initial
-            elements.profileInitial.textContent = state.user.name.charAt(0).toUpperCase();
+            elements.profileInitial.textContent = state.currentUser.name.charAt(0).toUpperCase();
             
-            // Update leaderboard
-            elements.leaderboard.innerHTML = state.leaderboard
-                .map((user, i) => `
-                    <li class="py-2 flex justify-between">
+            // Show appropriate content based on user role
+            if (state.currentUser.isAdmin) {
+                elements.userContent.classList.add('hidden');
+                elements.adminContent.classList.remove('hidden');
+                renderAdminDashboard();
+            } else {
+                elements.userContent.classList.remove('hidden');
+                elements.adminContent.classList.add('hidden');
+                
+                // Update leaderboard
+                const sortedUsers = [...state.users]
+                    .filter(u => !u.isAdmin)
+                    .sort((a, b) => b.points - a.points);
+                
+                elements.leaderboard.innerHTML = sortedUsers.map((user, i) => `
+                    <li class="py-2 flex justify-between ${user.id === state.currentUser.id ? 'font-bold text-blue-600' : ''}">
                         <span>${i + 1}. ${user.name}</span>
                         <span class="font-bold">${user.points} pts</span>
                     </li>
-                `)
-                .join('');
-            
-            // Show/hide admin panel
-            elements.adminPanel.classList.toggle('hidden', !state.isAdmin);
+                `).join('');
+            }
         }
 
         function renderTaskScreen() {
-            const task = state.tasks[0];
-            elements.taskPoints.textContent = task.points;
-            elements.taskCompleted.textContent = task.completed ? 'Yes' : 'No';
-            elements.taskCompleted.className = `text-2xl font-bold ${task.completed ? 'text-green-600' : 'text-red-500'}`;
-            elements.submitTask.disabled = task.completed;
-            elements.submitTask.className = `p-3 rounded-lg w-full font-medium btn-hover touch-target ${task.completed ? 'bg-gray-400' : 'bg-green-600 text-white'}`;
+            // For regular users, show their task status
+            if (!state.currentUser.isAdmin) {
+                const task = state.currentUser.tasks?.[0] || state.tasks[0];
+                const points = task?.points || 0;
+                const completed = task?.completed || false;
+                
+                elements.taskPoints.textContent = points;
+                elements.taskCompleted.textContent = completed ? 'Yes' : 'No';
+                elements.taskCompleted.className = `text-2xl font-bold ${completed ? 'text-green-600' : 'text-red-500'}`;
+                elements.submitTask.disabled = completed;
+                elements.submitTask.className = `p-3 rounded-lg w-full font-medium btn-hover touch-target ${completed ? 'bg-gray-400' : 'bg-green-600 text-white'}`;
+            }
         }
 
         // Helper Functions
@@ -338,14 +430,17 @@
         elements.toggleAuth.addEventListener('click', toggleAuthMode);
         elements.logoutBtn.addEventListener('click', logout);
         elements.profileBtn.addEventListener('click', () => {
-            const role = state.isAdmin ? 'Admin' : 'User';
-            showToast(`Logged in as ${state.user.name} (${role})`, 'blue');
+            const role = state.currentUser.isAdmin ? 'Admin' : 'User';
+            showToast(`Logged in as ${state.currentUser.name} (${role})`, 'blue');
         });
         elements.goToTask.addEventListener('click', showTaskScreen);
         elements.backBtn.addEventListener('click', goBackToApp);
         elements.submitTask.addEventListener('click', submitTask);
-        elements.addPointsBtn.addEventListener('click', addPointsToAll);
-        elements.resetPointsBtn.addEventListener('click', resetAllPoints);
+        elements.adminAddPoints.addEventListener('click', adminAddPointsToAll);
+        elements.adminResetPoints.addEventListener('click', adminResetAllPoints);
+
+        // Global functions for admin buttons
+        window.adminAddUserPoints = adminAddUserPoints;
 
         // Initialize
         renderAuthScreen();
