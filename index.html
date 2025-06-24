@@ -3,358 +3,352 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Task Monitor App</title>
+    <title>Task Monitor</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <style>
+        /* Mobile optimizations */
         .btn-hover {
             transition: all 0.2s ease;
-            transform: scale(1);
-        }
-        .btn-hover:hover {
-            transform: scale(1.03);
         }
         .btn-hover:active {
             transform: scale(0.98);
         }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        .touch-target {
+            min-height: 48px;
+            min-width: 48px;
         }
-        .animate-pulse {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
         }
     </style>
 </head>
-<body class="bg-gray-50 font-sans">
-    <div id="root"></div>
+<body class="bg-gray-100 min-h-screen font-sans">
+    <div id="app" class="container mx-auto px-4 py-6 max-w-4xl">
+        <!-- Auth Screen -->
+        <div id="auth-screen" class="min-h-screen flex items-center justify-center fade-in">
+            <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+                <h2 id="auth-title" class="text-2xl font-bold text-center mb-6">Login</h2>
+                <form id="auth-form" class="space-y-4">
+                    <div id="name-field" class="hidden">
+                        <label class="block text-sm font-medium mb-1">Name</label>
+                        <input type="text" id="name" class="w-full p-3 border rounded-lg touch-target">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Email</label>
+                        <input type="email" id="email" value="admin@example.com" class="w-full p-3 border rounded-lg touch-target">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Password</label>
+                        <input type="password" id="password" value="adminpass" class="w-full p-3 border rounded-lg touch-target">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg font-medium hover:bg-blue-700 transition btn-hover touch-target">
+                        Login
+                    </button>
+                </form>
+                <p class="text-center mt-4">
+                    <span id="toggle-auth" class="text-blue-600 cursor-pointer hover:underline">
+                        Create new account
+                    </span>
+                </p>
+                <p class="text-center text-sm text-gray-500 mt-2">
+                    Admin: admin@example.com / adminpass
+                </p>
+            </div>
+        </div>
 
-    <script type="module">
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+        <!-- Main App -->
+        <div id="main-app" class="hidden fade-in">
+            <!-- Header -->
+            <header class="bg-white p-4 rounded-xl shadow-md mb-6 flex justify-between items-center">
+                <h1 class="text-xl font-bold">Task Monitor</h1>
+                <div class="flex items-center space-x-2">
+                    <button id="profile-btn" class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center btn-hover touch-target">
+                        <span id="profile-initial" class="font-medium">U</span>
+                    </button>
+                    <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg text-sm btn-hover touch-target">
+                        Logout
+                    </button>
+                </div>
+            </header>
+
+            <!-- Admin Panel (visible only to admin) -->
+            <div id="admin-panel" class="bg-white p-6 rounded-xl shadow-md mb-4 hidden">
+                <h3 class="text-lg font-semibold mb-3 text-red-600">Admin Panel</h3>
+                <div class="space-y-3">
+                    <button id="add-points-btn" class="w-full bg-green-600 text-white p-2 rounded-lg btn-hover touch-target">
+                        Add 10 Points to All Users
+                    </button>
+                    <button id="reset-points-btn" class="w-full bg-red-600 text-white p-2 rounded-lg btn-hover touch-target">
+                        Reset All Points
+                    </button>
+                </div>
+            </div>
+
+            <!-- Task Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-white p-6 rounded-xl shadow-md task-card">
+                    <h3 class="text-lg font-semibold mb-3">Current Task</h3>
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <p class="font-medium text-blue-800">Python Programming</p>
+                        <p class="text-gray-600 my-2">Complete the exercises and submit your notes</p>
+                        <button id="go-to-task" class="bg-blue-600 text-white px-4 py-2 rounded-lg w-full mt-2 btn-hover touch-target">
+                            Start Task
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-md task-card">
+                    <h3 class="text-lg font-semibold mb-3">Leaderboard</h3>
+                    <ul id="leaderboard" class="divide-y">
+                        <li class="py-2 flex justify-between">
+                            <span>1. You</span>
+                            <span class="font-bold">0 pts</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task Screen -->
+        <div id="task-screen" class="hidden fade-in">
+            <div class="bg-white p-6 rounded-xl shadow-md mb-4">
+                <div class="flex justify-between items-center mb-4">
+                    <button id="back-btn" class="flex items-center text-blue-600 btn-hover touch-target">
+                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        Back
+                    </button>
+                    <h2 class="text-xl font-bold">Python Task</h2>
+                    <div></div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-lg mb-2">Your Progress</h3>
+                        <div class="flex flex-col sm:flex-row justify-around">
+                            <div class="text-center mb-4 sm:mb-0">
+                                <p>Points</p>
+                                <p class="text-2xl font-bold" id="task-points">0</p>
+                            </div>
+                            <div class="text-center">
+                                <p>Completed</p>
+                                <p class="text-2xl font-bold" id="task-completed">No</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="font-semibold text-lg mb-2">Submit Your Work</h3>
+                        <textarea id="task-notes" class="w-full p-3 border rounded-lg mb-3 touch-target" placeholder="Enter your notes here..."></textarea>
+                        <button id="submit-task" class="bg-green-600 text-white p-3 rounded-lg w-full font-medium btn-hover touch-target">
+                            Submit Notes (+5pts)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // App State
+        const state = {
+            user: null,
+            isAdmin: false,
+            tasks: [
+                {
+                    id: 'python',
+                    title: 'Python Programming',
+                    points: 0,
+                    completed: false
+                }
+            ],
+            leaderboard: [
+                { name: 'You', points: 0 }
+            ],
+            adminCredentials: {
+                email: 'admin@example.com',
+                password: 'adminpass'
+            }
         };
 
-        // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        // DOM Elements
+        const elements = {
+            authScreen: document.getElementById('auth-screen'),
+            mainApp: document.getElementById('main-app'),
+            taskScreen: document.getElementById('task-screen'),
+            authForm: document.getElementById('auth-form'),
+            authTitle: document.getElementById('auth-title'),
+            nameField: document.getElementById('name-field'),
+            toggleAuth: document.getElementById('toggle-auth'),
+            logoutBtn: document.getElementById('logout-btn'),
+            profileBtn: document.getElementById('profile-btn'),
+            profileInitial: document.getElementById('profile-initial'),
+            goToTask: document.getElementById('go-to-task'),
+            backBtn: document.getElementById('back-btn'),
+            taskNotes: document.getElementById('task-notes'),
+            submitTask: document.getElementById('submit-task'),
+            taskPoints: document.getElementById('task-points'),
+            taskCompleted: document.getElementById('task-completed'),
+            leaderboard: document.getElementById('leaderboard'),
+            adminPanel: document.getElementById('admin-panel'),
+            addPointsBtn: document.getElementById('add-points-btn'),
+            resetPointsBtn: document.getElementById('reset-points-btn')
+        };
 
-        // React components
-        const { createElement: h, useState, useEffect, createContext, useContext } = React;
+        // Auth Functions
+        function handleAuthSubmit(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const name = document.getElementById('name').value || 'User';
 
-        // App Context
-        const AppContext = createContext();
+            // Check for admin credentials
+            if (email === state.adminCredentials.email && password === state.adminCredentials.password) {
+                state.user = { email, name: 'Admin' };
+                state.isAdmin = true;
+                showToast('Admin login successful!', 'green');
+            } else {
+                state.user = { email, name };
+                state.isAdmin = false;
+                showToast('Login successful!', 'green');
+            }
 
-        function AppProvider({ children }) {
-            const [currentUser, setCurrentUser] = useState(null);
-            const [userId, setUserId] = useState(null);
-            const [isAdmin, setIsAdmin] = useState(false);
-            const [isLoading, setIsLoading] = useState(true);
-
-            useEffect(() => {
-                const unsubscribe = auth.onAuthStateChanged(async (user) => {
-                    if (user) {
-                        setCurrentUser(user);
-                        setUserId(user.uid);
-                        setIsLoading(false);
-                    } else {
-                        setCurrentUser(null);
-                        setUserId(null);
-                        setIsLoading(false);
-                    }
-                });
-                return () => unsubscribe();
-            }, []);
-
-            return (
-                h(AppContext.Provider, { 
-                    value: { db, auth, currentUser, userId, isAdmin, isLoading } 
-                }, children)
-            );
+            renderMainApp();
         }
 
-        function useAppContext() {
-            return useContext(AppContext);
+        function toggleAuthMode() {
+            const isLogin = elements.authTitle.textContent === 'Login';
+            elements.authTitle.textContent = isLogin ? 'Sign Up' : 'Login';
+            elements.toggleAuth.textContent = isLogin ? 'Have an account? Login' : 'Create new account';
+            elements.nameField.classList.toggle('hidden', !isLogin);
         }
 
-        // Modal Component
-        function Modal({ title, message, isOpen, onClose, onConfirm, showConfirmButton }) {
-            if (!isOpen) return null;
-
-            return h('div', { className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50' },
-                h('div', { className: 'bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm transition-all duration-300' },
-                    h('h3', { className: 'text-xl font-bold text-gray-800 mb-4' }, title),
-                    h('p', { className: 'text-gray-600 mb-6' }, message),
-                    h('div', { className: 'flex justify-end space-x-3' },
-                        h('button', {
-                            onClick: onClose,
-                            className: 'bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-5 rounded-lg transition-colors duration-200 shadow-sm'
-                        }, 'Close'),
-                        showConfirmButton && h('button', {
-                            onClick: onConfirm,
-                            className: 'bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors duration-200 shadow-md'
-                        }, 'Confirm')
-                    )
-                )
-            );
+        function logout() {
+            state.user = null;
+            state.isAdmin = false;
+            showToast('Logged out successfully!', 'blue');
+            renderAuthScreen();
         }
 
-        // Loading Spinner
-        function LoadingSpinner() {
-            return h('div', { className: 'flex justify-center items-center' },
-                h('div', { className: 'animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500' })
-            );
+        // Task Functions
+        function showTaskScreen() {
+            elements.mainApp.classList.add('hidden');
+            elements.taskScreen.classList.remove('hidden');
+            renderTaskScreen();
         }
 
-        // Login/Signup Page
-        function LoginPage({ onLoginSuccess }) {
-            const { auth, isLoading } = useAppContext();
-            const [email, setEmail] = useState('');
-            const [password, setPassword] = useState('');
-            const [name, setName] = useState('');
-            const [isSignup, setIsSignup] = useState(false);
-            const [error, setError] = useState('');
-            const [isModalOpen, setIsModalOpen] = useState(false);
-
-            const handleAuth = async (e) => {
-                e.preventDefault();
-                try {
-                    if (isSignup) {
-                        await auth.createUserWithEmailAndPassword(email, password);
-                        setIsSignup(false);
-                        setError('');
-                    } else {
-                        await auth.signInWithEmailAndPassword(email, password);
-                        onLoginSuccess();
-                    }
-                } catch (err) {
-                    setError(err.message);
-                    setIsModalOpen(true);
-                }
-            };
-
-            if (isLoading) return h(LoadingSpinner);
-
-            return h('div', { className: 'min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-700 p-4' },
-                h(Modal, {
-                    title: "Error",
-                    message: error,
-                    isOpen: isModalOpen,
-                    onClose: () => setIsModalOpen(false)
-                }),
-                h('div', { className: 'bg-white p-8 rounded-xl shadow-2xl w-full max-w-md' },
-                    h('h2', { className: 'text-3xl font-bold text-center text-gray-800 mb-6' }, isSignup ? 'Sign Up' : 'Log In'),
-                    h('form', { onSubmit: handleAuth, className: 'space-y-5' },
-                        isSignup && h('div', null,
-                            h('label', { className: 'block text-gray-700 text-sm font-bold mb-2', htmlFor: 'name' }, 'Name'),
-                            h('input', {
-                                id: 'name',
-                                type: 'text',
-                                className: 'shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-400',
-                                placeholder: 'Your Name',
-                                value: name,
-                                onChange: (e) => setName(e.target.value),
-                                required: true
-                            })
-                        ),
-                        h('div', null,
-                            h('label', { className: 'block text-gray-700 text-sm font-bold mb-2', htmlFor: 'email' }, 'Email'),
-                            h('input', {
-                                id: 'email',
-                                type: 'email',
-                                className: 'shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-400',
-                                placeholder: 'Email',
-                                value: email,
-                                onChange: (e) => setEmail(e.target.value),
-                                required: true
-                            })
-                        ),
-                        h('div', null,
-                            h('label', { className: 'block text-gray-700 text-sm font-bold mb-2', htmlFor: 'password' }, 'Password'),
-                            h('input', {
-                                id: 'password',
-                                type: 'password',
-                                className: 'shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-400',
-                                placeholder: 'Password',
-                                value: password,
-                                onChange: (e) => setPassword(e.target.value),
-                                required: true
-                            })
-                        ),
-                        error && h('p', { className: 'text-red-500 text-sm italic' }, error),
-                        h('button', {
-                            type: 'submit',
-                            className: 'w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition-colors duration-200 shadow-lg btn-hover'
-                        }, isSignup ? 'Sign Up' : 'Log In')
-                    ),
-                    h('p', { className: 'text-center text-gray-600 text-sm mt-6' },
-                        isSignup ? 'Already have an account?' : "Don't have an account?",
-                        h('button', {
-                            onClick: () => setIsSignup(!isSignup),
-                            className: 'text-blue-600 hover:text-blue-800 font-semibold ml-2 transition-colors duration-200'
-                        }, isSignup ? 'Log In' : 'Sign Up')
-                    )
-                )
-            );
+        function submitTask() {
+            if (state.tasks[0].completed) return;
+            
+            state.tasks[0].completed = true;
+            state.tasks[0].points = 5;
+            state.leaderboard[0].points += 5;
+            
+            renderTaskScreen();
+            showToast('Task submitted successfully! +5 points', 'green');
         }
 
-        // Home Page
-        function HomePage({ onNavigate }) {
-            const { currentUser, isLoading } = useAppContext();
-            const [leaderboard, setLeaderboard] = useState([]);
-
-            useEffect(() => {
-                // Simulated leaderboard data
-                setLeaderboard([
-                    { id: '1', name: 'John Doe', totalPoints: 150 },
-                    { id: '2', name: 'Jane Smith', totalPoints: 120 },
-                    { id: '3', name: 'Mike Johnson', totalPoints: 90 }
-                ]);
-            }, []);
-
-            if (isLoading) return h(LoadingSpinner);
-
-            return h('div', { className: 'min-h-screen bg-gray-100 flex flex-col items-center p-4' },
-                h('header', { className: 'w-full max-w-4xl bg-white rounded-xl shadow-md p-4 flex justify-between items-center mb-6 mt-4' },
-                    h('h1', { className: 'text-2xl font-bold text-gray-800' }, 'Task Monitor'),
-                    h('div', { className: 'flex items-center space-x-4' },
-                        h('button', {
-                            className: 'relative group',
-                            onClick: () => alert('Profile View')
-                        },
-                            h('img', {
-                                src: `https://placehold.co/150x150/a78bfa/ffffff?text=${currentUser?.email?.[0]?.toUpperCase() || 'U'}`,
-                                alt: 'Profile',
-                                className: 'w-10 h-10 rounded-full border-2 border-blue-500 object-cover btn-hover'
-                            })
-                        ),
-                        h('button', {
-                            onClick: () => onNavigate('login'),
-                            className: 'bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 shadow-md btn-hover'
-                        }, 'Log Out')
-                    )
-                ),
-                h('main', { className: 'w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-6' },
-                    h('section', { className: 'bg-white rounded-xl shadow-lg p-6 border-t-4 border-blue-500' },
-                        h('h2', { className: 'text-2xl font-bold text-gray-800 mb-4' }, 'Current Ongoing Task'),
-                        h('div', { className: 'bg-blue-50 p-4 rounded-lg flex flex-col items-center justify-center text-center' },
-                            h('p', { className: 'text-xl font-semibold text-blue-800 mb-3' }, 'Python Programming'),
-                            h('p', { className: 'text-gray-600 mb-4' }, 'Master Python concepts and share your notes!'),
-                            h('button', {
-                                onClick: () => onNavigate('task'),
-                                className: 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200 shadow-md btn-hover'
-                            }, 'Go to Task')
-                        )
-                    ),
-                    h('section', { className: 'bg-white rounded-xl shadow-lg p-6 border-t-4 border-green-500' },
-                        h('h2', { className: 'text-2xl font-bold text-gray-800 mb-4 flex items-center justify-between' },
-                            'Leaderboard',
-                            h('svg', { className: 'w-6 h-6 text-green-600', fill: 'currentColor', viewBox: '0 0 20 20' },
-                                h('path', { fillRule: 'evenodd', d: 'M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z', clipRule: 'evenodd' })
-                            )
-                        ),
-                        h('ul', { className: 'divide-y divide-gray-200' },
-                            leaderboard.length > 0 ? leaderboard.map((user, index) =>
-                                h('li', { key: user.id, className: 'py-3 flex items-center justify-between' },
-                                    h('span', { className: 'font-semibold text-gray-700' },
-                                        `#${index + 1} ${user.name}`
-                                    ),
-                                    h('span', { className: 'text-blue-600 font-bold' },
-                                        `${user.totalPoints} pts`
-                                    )
-                                )
-                            ) : h('li', { className: 'py-3 text-center text-gray-500' }, 'No participants yet.')
-                        )
-                    )
-                )
-            );
+        function goBackToApp() {
+            elements.taskScreen.classList.add('hidden');
+            elements.mainApp.classList.remove('hidden');
+            renderMainApp();
         }
 
-        // Task Page
-        function TaskPage({ onNavigate }) {
-            const [userTaskPoints, setUserTaskPoints] = useState(0);
-            const [hasUploadedNotes, setHasUploadedNotes] = useState(false);
-            const [isModalOpen, setIsModalOpen] = useState(false);
-
-            const handleUploadNotes = () => {
-                setUserTaskPoints(prev => prev + 5);
-                setHasUploadedNotes(true);
-                setIsModalOpen(true);
-            };
-
-            return h('div', { className: 'min-h-screen bg-gray-100 p-4 flex flex-col items-center' },
-                h(Modal, {
-                    title: "Success!",
-                    message: "Your notes have been uploaded and you've earned 5 points!",
-                    isOpen: isModalOpen,
-                    onClose: () => setIsModalOpen(false)
-                }),
-                h('header', { className: 'w-full max-w-4xl bg-white rounded-xl shadow-md p-4 flex justify-between items-center mb-6 mt-4' },
-                    h('button', {
-                        onClick: () => onNavigate('home'),
-                        className: 'bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg flex items-center transition-colors duration-200 shadow-sm btn-hover'
-                    },
-                        h('svg', { className: 'w-4 h-4 mr-2', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' },
-                            h('path', { strokeLinecap: 'round', strokeLinejoin: 'round', strokeWidth: '2', d: 'M10 19l-7-7m0 0l7-7m-7 7h18' })
-                        ),
-                        'Back to Home'
-                    ),
-                    h('h1', { className: 'text-2xl font-bold text-gray-800' }, 'Task Details: Python Programming')
-                ),
-                h('main', { className: 'w-full max-w-4xl bg-white rounded-xl shadow-lg p-6 border-t-4 border-blue-500' },
-                    h('h2', { className: 'text-2xl font-bold text-gray-800 mb-4' }, 'Your Progress'),
-                    h('div', { className: 'flex flex-col sm:flex-row justify-around items-center bg-blue-50 p-4 rounded-lg mb-6' },
-                        h('div', { className: 'text-center mb-4 sm:mb-0' },
-                            h('p', { className: 'text-lg text-gray-600' }, 'Your points for this task:'),
-                            h('p', { className: 'text-4xl font-extrabold text-blue-700' }, userTaskPoints)
-                        ),
-                        h('div', { className: 'text-center' },
-                            h('p', { className: 'text-lg text-gray-600' }, 'Notes Uploaded:'),
-                            h('p', { className: `text-4xl font-extrabold ${hasUploadedNotes ? 'text-green-600' : 'text-red-500'}` }, hasUploadedNotes ? 'Yes' : 'No')
-                        )
-                    ),
-                    h('div', { className: 'border-t border-gray-200 pt-6 mt-6' },
-                        h('h2', { className: 'text-2xl font-bold text-gray-800 mb-4' }, 'Upload Notes'),
-                        h('p', { className: 'text-gray-600 mb-4' },
-                            'Upload your Python programming notes (PDF format). You will receive 5 points for each valid upload.'
-                        ),
-                        h('button', {
-                            onClick: handleUploadNotes,
-                            disabled: hasUploadedNotes,
-                            className: `w-full ${hasUploadedNotes ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'} text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md btn-hover`
-                        }, hasUploadedNotes ? 'Notes Uploaded!' : 'Upload Notes (Get 5 Points!)')
-                    )
-                )
-            );
+        // Admin Functions
+        function addPointsToAll() {
+            state.leaderboard.forEach(user => {
+                user.points += 10;
+            });
+            renderMainApp();
+            showToast('Added 10 points to all users!', 'green');
         }
 
-        // App Component
-        function App() {
-            const { currentUser, isLoading } = useAppContext();
-            const [currentPage, setCurrentPage] = useState('login');
+        function resetAllPoints() {
+            state.leaderboard.forEach(user => {
+                user.points = 0;
+            });
+            state.tasks[0].points = 0;
+            state.tasks[0].completed = false;
+            renderMainApp();
+            renderTaskScreen();
+            showToast('All points have been reset!', 'red');
+        }
 
-            useEffect(() => {
-                if (!isLoading && currentUser) {
-                    setCurrentPage('home');
-                } else if (!isLoading && !currentUser) {
-                    setCurrentPage('login');
-                }
-            }, [currentUser, isLoading]);
+        // Render Functions
+        function renderAuthScreen() {
+            elements.authScreen.classList.remove('hidden');
+            elements.mainApp.classList.add('hidden');
+            elements.taskScreen.classList.add('hidden');
+            elements.authForm.reset();
+        }
 
-            const handleLoginSuccess = () => {
-                set
+        function renderMainApp() {
+            elements.authScreen.classList.add('hidden');
+            elements.mainApp.classList.remove('hidden');
+            elements.taskScreen.classList.add('hidden');
+            
+            // Update profile initial
+            elements.profileInitial.textContent = state.user.name.charAt(0).toUpperCase();
+            
+            // Update leaderboard
+            elements.leaderboard.innerHTML = state.leaderboard
+                .map((user, i) => `
+                    <li class="py-2 flex justify-between">
+                        <span>${i + 1}. ${user.name}</span>
+                        <span class="font-bold">${user.points} pts</span>
+                    </li>
+                `)
+                .join('');
+            
+            // Show/hide admin panel
+            elements.adminPanel.classList.toggle('hidden', !state.isAdmin);
+        }
 
-🎨 **Generating images based on descriptions...**
+        function renderTaskScreen() {
+            const task = state.tasks[0];
+            elements.taskPoints.textContent = task.points;
+            elements.taskCompleted.textContent = task.completed ? 'Yes' : 'No';
+            elements.taskCompleted.className = `text-2xl font-bold ${task.completed ? 'text-green-600' : 'text-red-500'}`;
+            elements.submitTask.disabled = task.completed;
+            elements.submitTask.className = `p-3 rounded-lg w-full font-medium btn-hover touch-target ${task.completed ? 'bg-gray-400' : 'bg-green-600 text-white'}`;
+        }
 
-✅ **Images generated successfully! Here's your updated content:**
+        // Helper Functions
+        function showToast(message, color = 'blue') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-${color}-600 text-white px-4 py-2 rounded-lg shadow-lg fade-in`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
 
-Here's a complete, modern, mobile-friendly version of your React application as a single HTML file with embedded CSS and JavaScript:
+        // Event Listeners
+        elements.authForm.addEventListener('submit', handleAuthSubmit);
+        elements.toggleAuth.addEventListener('click', toggleAuthMode);
+        elements.logoutBtn.addEventListener('click', logout);
+        elements.profileBtn.addEventListener('click', () => {
+            const role = state.isAdmin ? 'Admin' : 'User';
+            showToast(`Logged in as ${state.user.name} (${role})`, 'blue');
+        });
+        elements.goToTask.addEventListener('click', showTaskScreen);
+        elements.backBtn.addEventListener('click', goBackToApp);
+        elements.submitTask.addEventListener('click', submitTask);
+        elements.addPointsBtn.addEventListener('click', addPointsToAll);
+        elements.resetPointsBtn.addEventListener('click', resetAllPoints);
 
+        // Initialize
+        renderAuthScreen();
+    </script>
+</body>
+</html>
