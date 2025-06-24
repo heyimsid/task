@@ -739,7 +739,6 @@ function AdminPage({ onNavigate }) {
                                 <div className="mb-2 sm:mb-0">
                                     <p className="font-semibold text-gray-800">{sub.userName} (<span className="text-sm text-gray-500">ID: {sub.userId.substring(0, 5)}...</span>)</p>
                                     <p className="text-gray-600 text-sm">Task: {sub.taskId === 'python-programming' ? 'Python Programming' : sub.taskId}</p>
-                                    <p className="text-gray-600 text-sm">Notes Uploaded: {sub.notesUploaded ? 'Yes' : 'No'}</p>
                                     <p className="text-blue-600 font-bold">Current Task Points: {sub.pointsAwarded || 0}</p>
                                 </div>
                                 <div className="flex space-x-2 mt-2 sm:mt-0">
@@ -836,4 +835,3 @@ export default function App() {
         </AppProvider>
     );
 }
-
