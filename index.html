@@ -116,19 +116,6 @@
             border-radius: 9999px;
             transition: width 0.5s ease-in-out;
         }
-
-        /* Status badge styles */
-        .status-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 9999px;
-            font-size: 0.75rem; /* text-xs */
-            font-weight: 600; /* font-semibold */
-            margin-left: 8px; /* ml-2 */
-        }
-        .status-pending { background-color: #fbd38d; color: #9c4221; } /* yellow-300, yellow-800 */
-        .status-approved { background-color: #a7f3d0; color: #065f46; } /* green-200, green-800 */
-        .status-rejected { background-color: #fecaca; color: #991b1b; } /* red-200, red-800 */
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
@@ -237,27 +224,6 @@
                         </div>
                     </div>
 
-                    <!-- Pending Document Approvals Section -->
-                    <div class="mb-6">
-                        <h3 class="text-lg font-semibold mb-3 text-gray-700">Pending Document Approvals</h3>
-                        <div class="overflow-x-auto">
-                            <table class="w-full border-collapse min-w-max">
-                                <thead>
-                                    <tr class="bg-yellow-100 text-yellow-800">
-                                        <th class="p-3 text-left font-semibold">User</th>
-                                        <th class="p-3 text-left font-semibold">Document</th>
-                                        <th class="p-3 text-left font-semibold">Uploaded</th>
-                                        <th class="p-3 text-left font-semibold">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="pending-documents-list">
-                                    <!-- Dynamic content for pending documents -->
-                                    <tr><td colspan="4" class="p-3 text-center text-gray-500">No documents pending approval.</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
                     <!-- Manage Users Table -->
                     <h3 class="text-lg font-semibold mb-3 text-gray-700">Manage Users</h3>
                     <div class="mb-6 overflow-x-auto">
@@ -290,7 +256,7 @@
                                 <textarea id="new-task-description" class="w-full p-2 border rounded-lg h-20 resize-y"></textarea>
                             </div>
                             <div>
-                                <label for="new-task-max-points" class="block text-sm font-medium mb-1">Max Points (e.g., 100)</label>
+                                <label for="new-task-max-points" class="block text-sm font-medium mb-1">Max Points</label>
                                 <input type="number" id="new-task-max-points" class="w-full p-2 border rounded-lg" required min="1">
                             </div>
                             <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium btn-hover touch-target">Add Task</button>
@@ -380,7 +346,7 @@
                                 </div>
                             </label>
                             <button id="upload-btn" class="bg-green-600 text-white p-3 rounded-lg w-full font-medium btn-hover transition duration-200 ease-in-out hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 hidden touch-target">
-                                Upload Document (Pending Review)
+                                Upload Document (+5pts)
                             </button>
                         </div>
                     </div>
@@ -468,7 +434,7 @@
     <script>
         // App State - Centralized data store
         const state = {
-            users: [], // Will be loaded by refreshStateFromLocalStorage()
+            users: [], // Will be loaded by refreshUsersState()
             currentUser: null, // Holds the currently logged-in user object
             allTasks: [], // All dynamically created tasks
             announcements: [], // All dynamically created announcements
@@ -536,7 +502,6 @@
             adminUsersList: document.getElementById('admin-users-list'),
             adminAddPoints: document.getElementById('admin-add-points'),
             adminResetPoints: document.getElementById('admin-reset-points'),
-            pendingDocumentsList: document.getElementById('pending-documents-list'), // New for admin approvals
             
             // Admin Task Management
             addTaskForm: document.getElementById('add-task-form'),
@@ -730,14 +695,13 @@
             }
 
             // Ensure a default task exists if none are defined
-            // Modified default task to have maxPoints: 100
             if (state.allTasks.length === 0) {
-                console.log('No tasks found, creating a default "Python Programming" task with maxPoints: 100.');
+                console.log('No tasks found, creating a default "Python Programming" task.');
                 const defaultTask = {
                     id: 'task-' + Date.now(),
                     title: 'Python Programming Basics',
                     description: 'Complete the core Python exercises and submit your notes.',
-                    maxPoints: 100, // Default max points for the main task
+                    maxPoints: 50,
                     isActive: true // Set as the default active task
                 };
                 state.allTasks.push(defaultTask);
@@ -845,8 +809,7 @@
                 id: activeTask.id, 
                 title: activeTask.title, 
                 completed: false, 
-                points: 0,
-                maxPoints: activeTask.maxPoints // Assign maxPoints from the global task
+                points: 0 
             } : null;
 
             const newUser = {
@@ -897,16 +860,17 @@
                         ...state.adminCredentials,
                         isAdmin: true,
                         points: 0,
-                        tasks: [], 
+                        tasks: [], // Admin typically doesn't have regular tasks
                         documents: [],
                         profilePicture: ''
                     };
                     state.users.push(newAdminUser);
                     saveStateToLocalStorage();
-                    adminUser = newAdminUser; 
+                    adminUser = newAdminUser; // Set adminUser to the newly created one
                 } else {
                     // Just update properties in case the localStorage version is outdated
                     Object.assign(adminUser, state.adminCredentials, { isAdmin: true });
+                    // Find and replace the admin in the users array to ensure consistency
                     state.users = state.users.map(u => u.id === adminUser.id ? adminUser : u);
                     saveStateToLocalStorage();
                 }
@@ -944,18 +908,20 @@
          */
         function toggleAuthMode(e) {
             console.log('--- toggleAuthMode() called ---');
-            const isLoginMode = elements.authTitle.textContent === 'Login';
+            const isLogin = elements.authTitle.textContent === 'Login';
             
-            if (isLoginMode) { // Currently in Login mode, switching to Sign Up
-                elements.authTitle.textContent = 'Sign Up';
-                elements.toggleAuth.textContent = 'Have an account? Login';
-                elements.nameField.classList.remove('hidden'); // Show name field
-            } else { // Currently in Sign Up mode, switching to Login
-                elements.authTitle.textContent = 'Login';
-                elements.toggleAuth.textContent = 'Create new account';
-                elements.nameField.classList.add('hidden'); // Hide name field
-                // Clear fields only when explicitly switching BACK to login to ensure clean slate
-                elements.emailInput.value = ''; 
+            elements.authTitle.textContent = isLogin ? 'Sign Up' : 'Login';
+            elements.toggleAuth.textContent = isLogin ? 'Have an account? Login' : 'Create new account';
+            elements.nameField.classList.toggle('hidden', !isLogin); // Show name field only for Sign Up
+            
+            // Pre-fill email/password if coming from a failed login attempt
+            // This is handled by the values already being in the input fields if they were typed.
+            // We only clear them if switching back to login, or if new signup.
+            if (isLogin) { // Switching from Login to Signup
+                // Fields should retain values if user just failed login, for them to sign up.
+                // No explicit clearing of email/password needed here.
+            } else { // Switching from Signup to Login
+                elements.emailInput.value = ''; // Clear fields for new login attempt
                 elements.passwordInput.value = '';
                 elements.nameInput.value = '';
             }
@@ -984,10 +950,6 @@
          * @param {number} maxPoints
          */
         function addTask(title, description, maxPoints) {
-            if (maxPoints <= 0) {
-                showToast('Max Points must be greater than 0.', 'red');
-                return;
-            }
             const newTask = {
                 id: 'task-' + Date.now(),
                 title,
@@ -1006,18 +968,12 @@
          * @param {string} taskId
          */
         function setActiveTask(taskId) {
-            showConfirmationModal(
-                'Set Active Task',
-                'Are you sure you want to set this task as active? This will be assigned to new users.',
-                () => {
-                    state.allTasks.forEach(task => {
-                        task.isActive = (task.id === taskId);
-                    });
-                    saveStateToLocalStorage();
-                    showToast('Active task updated!', 'blue');
-                    renderAdminDashboard();
-                }
-            );
+            state.allTasks.forEach(task => {
+                task.isActive = (task.id === taskId);
+            });
+            saveStateToLocalStorage();
+            showToast('Active task updated!', 'blue');
+            renderAdminDashboard();
         }
 
         /**
@@ -1027,7 +983,7 @@
         function deleteTask(taskId) {
             showConfirmationModal(
                 'Delete Task',
-                'Are you sure you want to delete this task? This cannot be undone and will affect assigned users.',
+                'Are you sure you want to delete this task? This cannot be undone.',
                 () => {
                     state.allTasks = state.allTasks.filter(task => task.id !== taskId);
                     // Also remove this task from any user's active tasks if it was assigned
@@ -1071,4 +1027,714 @@
                 'Delete Announcement',
                 'Are you sure you want to delete this announcement?',
                 () => {
-                    state.announcements = state.announcements.filter(ann => ann
+                    state.announcements = state.announcements.filter(ann => ann.id !== announcementId);
+                    saveStateToLocalStorage();
+                    showToast('Announcement deleted!', 'red');
+                    renderAdminDashboard();
+                }
+            );
+        }
+
+        /* ----- User Management Functions (Admin) ----- */
+
+        /**
+         * Deletes a user.
+         * @param {string} userId
+         */
+        function deleteUser(userId) {
+            showConfirmationModal(
+                'Delete User',
+                'Are you sure you want to permanently delete this user? This action cannot be undone.',
+                () => {
+                    state.users = state.users.filter(user => user.id !== userId);
+                    // If the deleted user was the current user (shouldn't happen for admin, but as a safeguard)
+                    if (state.currentUser && state.currentUser.id === userId) {
+                        logout();
+                    } else {
+                        saveStateToLocalStorage();
+                        showToast('User deleted!', 'red');
+                        renderAdminDashboard();
+                    }
+                }
+            );
+        }
+
+        /* ----- Document & File Functions ----- */
+
+        /**
+         * Sets up event listeners for file input and upload button.
+         */
+        function setupFileUpload() {
+            elements.fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) {
+                    elements.uploadBtn.classList.add('hidden'); 
+                    state.selectedFile = null;
+                    return;
+                }
+                if (file.type !== 'application/pdf') {
+                    showToast('Please upload a PDF file only.', 'red');
+                    elements.uploadBtn.classList.add('hidden');
+                    state.selectedFile = null;
+                    return;
+                }
+                state.selectedFile = file; 
+                elements.uploadBtn.classList.remove('hidden');
+                elements.uploadBtn.textContent = `Upload "${file.name}" (+5pts)`;
+            });
+            elements.uploadBtn.addEventListener('click', uploadDocument);
+        }
+
+        /**
+         * Handles the document upload process (simulated).
+         */
+        function uploadDocument() {
+            if (!state.selectedFile || !state.currentUser) return; 
+            
+            const now = new Date();
+            const day = now.getDate().toString().padStart(2, '0');
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][now.getDay()];
+            const docName = `Day ${state.currentUser.documents.length + 1} (${dayName} ${day}.${month})`;
+            
+            const newDoc = {
+                id: 'doc-' + Date.now(), 
+                name: docName,
+                filename: state.selectedFile.name,
+                size: state.selectedFile.size,
+                uploadedAt: now.toISOString(),
+                day: state.currentUser.documents.length + 1
+            };
+            
+            state.currentUser.documents.push(newDoc); 
+            
+            // Award points for upload
+            state.currentUser.points += 5;
+            const userTask = state.currentUser.tasks[0]; // Assuming one task per user for now
+            if (userTask) {
+                userTask.points += 5; 
+                const activeGlobalTask = state.allTasks.find(t => t.id === userTask.id);
+                if (activeGlobalTask && userTask.points >= activeGlobalTask.maxPoints && !userTask.completed) {
+                    userTask.completed = true;
+                    showToast(`Task "${userTask.title}" Completed!`, 'green');
+                }
+            }
+            
+            saveStateToLocalStorage(); 
+            showToast('Document uploaded and points awarded!', 'green');
+            elements.fileInput.value = ''; 
+            elements.uploadBtn.classList.add('hidden'); 
+            state.selectedFile = null; 
+            renderTaskScreen(); 
+        }
+
+        /**
+         * Renders the list of uploaded documents for a given user.
+         * This function is now generalized to be used by both user's own documents and admin's view.
+         * @param {HTMLElement} targetGrid - The HTML element (e.g., a div) where documents should be rendered.
+         * @param {Array} documents - The array of document objects to display.
+         * @param {HTMLElement} noDocumentsMessageElement - Optional: Element to show if no documents.
+         */
+        function renderDocumentsForUser(targetGrid, documents, noDocumentsMessageElement = null) {
+            targetGrid.innerHTML = ''; // Clear existing documents
+            if (documents && documents.length > 0) {
+                if (noDocumentsMessageElement) noDocumentsMessageElement.classList.add('hidden');
+                documents.forEach(doc => {
+                    const docCard = document.createElement('div');
+                    docCard.className = 'document-card cursor-pointer';
+                    docCard.innerHTML = `
+                        <div class="pdf-icon">📄</div>
+                        <p class="text-sm font-medium text-gray-800">${doc.name}</p>
+                        <p class="text-xs text-gray-500">${(doc.size / 1024).toFixed(1)} KB</p>
+                    `;
+                    docCard.addEventListener('click', () => {
+                        showToast(`Simulating view/download for: ${doc.filename}`, 'blue');
+                    });
+                    targetGrid.appendChild(docCard);
+                });
+            } else {
+                if (noDocumentsMessageElement) {
+                    noDocumentsMessageElement.classList.remove('hidden');
+                    targetGrid.innerHTML = ''; 
+                } else {
+                    targetGrid.innerHTML = '<p class="text-gray-500 text-center col-span-full">No documents uploaded yet.</p>';
+                }
+            }
+        }
+
+        // Original renderDocuments is now a wrapper for renderDocumentsForUser specific to current user's task screen
+        function renderDocuments() {
+            if (state.currentUser && state.currentUser.documents) {
+                renderDocumentsForUser(elements.documentGrid, state.currentUser.documents);
+            } else {
+                elements.documentGrid.innerHTML = '<p class="text-gray-500 text-center col-span-full">No documents uploaded yet.</p>';
+            }
+        }
+
+        /* ----- Profile Modal Functions (for current user) ----- */
+
+        /**
+         * Displays the user profile modal with current user's details.
+         */
+        function showProfileModal() {
+            if (!state.currentUser) {
+                showToast('Please log in to view your profile.', 'red');
+                return;
+            }
+            document.body.classList.add('overflow-hidden'); // Prevent background scrolling
+            elements.profileModal.classList.remove('hidden'); // Show the modal overlay
+
+            // Populate modal with current user data
+            if (state.currentUser.profilePicture) {
+                elements.modalProfilePic.src = state.currentUser.profilePicture;
+                elements.modalProfilePic.classList.remove('hidden');
+                elements.modalProfileInitial.classList.add('hidden'); // Hide initial if image exists
+            } else {
+                elements.modalProfilePic.src = '';
+                elements.modalProfilePic.classList.add('hidden');
+                elements.modalProfileInitial.classList.remove('hidden'); // Show initial if no image
+                elements.modalProfileInitial.textContent = state.currentUser.name ? state.currentUser.name.charAt(0).toUpperCase() : 'U';
+            }
+            
+            elements.modalUserName.textContent = `Name: ${state.currentUser.name}`;
+            elements.modalUserEmail.textContent = `Email: ${state.currentUser.email}`;
+            elements.modalUserPoints.textContent = `Total Points: ${state.currentUser.points}`;
+        }
+
+        /**
+         * Hides the user profile modal.
+         */
+        function hideProfileModal() {
+            document.body.classList.remove('overflow-hidden'); // Re-enable background scrolling
+            elements.profileModal.classList.add('hidden'); // Hide the modal overlay
+        }
+
+        /**
+         * Handles the upload of a new profile picture from the modal.
+         * @param {Event} e - The change event from the file input.
+         */
+        function handleProfilePicUpload(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Check if file is an image
+                if (!file.type.startsWith('image/')) {
+                    showToast('Please upload an image file (PNG, JPG, GIF, etc.).', 'red');
+                    e.target.value = ''; // Clear the file input
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    if (state.currentUser) {
+                        state.currentUser.profilePicture = event.target.result; // Store base64 string
+                        saveStateToLocalStorage(); // Save changes
+                        showToast('Profile picture updated!', 'green');
+                        renderMainApp(); // Update header profile pic
+                        showProfileModal(); // Re-open modal to show new pic
+                    }
+                };
+                reader.readAsDataURL(file); // Read file as base64
+            }
+        }
+
+        /* ----- Admin User Detail Modal Functions (new) ----- */
+
+        /**
+         * Displays the admin user details modal for a specific user.
+         * @param {string} userId - The ID of the user to display.
+         */
+        function showAdminUserDetailsModal(userId) {
+            const userToView = state.users.find(user => user.id === userId);
+            if (!userToView) {
+                showToast('User not found!', 'red');
+                return;
+            }
+
+            document.body.classList.add('overflow-hidden'); // Prevent background scrolling
+            elements.adminUserDetailModal.classList.remove('hidden');
+
+            // Populate modal with selected user's data
+            if (userToView.profilePicture) {
+                elements.adminModalProfilePic.src = userToView.profilePicture;
+                elements.adminModalProfilePic.classList.remove('hidden');
+                elements.adminModalProfileInitial.classList.add('hidden');
+            } else {
+                elements.adminModalProfilePic.src = '';
+                elements.adminModalProfilePic.classList.add('hidden');
+                elements.adminModalProfileInitial.classList.remove('hidden');
+                elements.adminModalProfileInitial.textContent = userToView.name ? userToView.name.charAt(0).toUpperCase() : 'U';
+            }
+            
+            elements.adminModalUserName.textContent = `Name: ${userToView.name}`;
+            elements.adminModalUserEmail.textContent = `Email: ${userToView.email}`;
+            elements.adminModalUserPoints.textContent = `Total Points: ${userToView.points}`;
+
+            const userTask = userToView.tasks[0]; // Assuming user has one main task for now
+            if (userTask) {
+                const globalTask = state.allTasks.find(t => t.id === userTask.id);
+                const maxPoints = globalTask ? globalTask.maxPoints : 0;
+                const percentage = maxPoints > 0 ? (userTask.points / maxPoints) * 100 : 0;
+                
+                elements.adminModalTaskPoints.textContent = `${userTask.points} pts`;
+                elements.adminModalTaskCompleted.textContent = userTask.completed ? 'Completed' : 'Not Completed';
+                elements.adminModalTaskCompleted.className = userTask.completed ? 'text-lg text-green-600' : 'text-lg text-red-500';
+                
+                elements.adminModalTaskProgressBar.style.width = `${percentage}%`;
+                elements.adminModalTaskProgressText.textContent = `Progress: ${percentage.toFixed(0)}% (${userTask.points} / ${maxPoints} pts)`;
+
+            } else {
+                 elements.adminModalTaskPoints.textContent = 'N/A';
+                 elements.adminModalTaskCompleted.textContent = 'No task assigned';
+                 elements.adminModalTaskCompleted.className = 'text-lg text-gray-500';
+                 elements.adminModalTaskProgressBar.style.width = '0%';
+                 elements.adminModalTaskProgressText.textContent = 'Progress: 0% (0 / 0 pts)';
+            }
+
+            renderDocumentsForUser(elements.adminModalUserDocumentsGrid, userToView.documents, elements.adminModalNoDocuments);
+        }
+
+        /**
+         * Hides the admin user details modal.
+         */
+        function hideAdminUserDetailsModal() {
+            document.body.classList.remove('overflow-hidden'); // Re-enable background scrolling
+            elements.adminUserDetailModal.classList.add('hidden');
+        }
+
+        /* ----- Render Functions (UI Updates) ----- */
+
+        /**
+         * Renders the authentication screen and hides other app sections.
+         */
+        function renderAuthScreen() {
+            console.log('--- renderAuthScreen() ---');
+            elements.authScreen.classList.remove('hidden');
+            elements.mainApp.classList.add('hidden');
+            elements.taskScreen.classList.add('hidden');
+            elements.profileModal.classList.add('hidden'); 
+            elements.adminUserDetailModal.classList.add('hidden'); 
+            elements.confirmationModal.classList.add('hidden'); // Ensure confirmation modal is hidden
+            document.body.classList.remove('overflow-hidden'); // Ensure body scroll is re-enabled
+
+            elements.authForm.reset(); // Clear form fields
+            clearAuthError(); // Clear auth error messages
+            elements.authTitle.textContent = 'Login';
+            elements.toggleAuth.textContent = 'Create new account';
+            elements.nameField.classList.add('hidden'); // Hide name field for login by default
+            // Clear header profile pic display on logout
+            elements.headerProfilePic.classList.add('hidden');
+            elements.headerProfilePic.src = '';
+            elements.profileInitial.classList.remove('hidden');
+            elements.profileInitial.textContent = 'U'; // Reset to default initial
+        }
+
+        /**
+         * Renders the main application dashboard, showing either user or admin content.
+         */
+        function renderMainApp() {
+            console.log('--- renderMainApp() ---');
+            if (!state.currentUser) {
+                renderAuthScreen(); 
+                return;
+            }
+
+            // Hide all other main screens
+            elements.authScreen.classList.add('hidden');
+            elements.taskScreen.classList.add('hidden');
+            elements.profileModal.classList.add('hidden'); 
+            elements.adminUserDetailModal.classList.add('hidden'); 
+            elements.confirmationModal.classList.add('hidden'); // Ensure confirmation modal is hidden
+            elements.mainApp.classList.remove('hidden'); 
+            document.body.classList.remove('overflow-hidden'); 
+
+            // Update profile button in header based on current user's profile picture
+            if (state.currentUser.profilePicture) {
+                elements.headerProfilePic.src = state.currentUser.profilePicture;
+                elements.headerProfilePic.classList.remove('hidden');
+                elements.profileInitial.classList.add('hidden');
+            } else {
+                elements.headerProfilePic.src = '';
+                elements.headerProfilePic.classList.add('hidden');
+                elements.profileInitial.classList.remove('hidden');
+                elements.profileInitial.textContent = state.currentUser.name ? state.currentUser.name.charAt(0).toUpperCase() : 'U';
+            }
+
+            // Render specific content based on user role
+            if (state.currentUser.isAdmin) {
+                elements.adminContent.classList.remove('hidden');
+                elements.userContent.classList.add('hidden');
+                renderAdminDashboard();
+            } else {
+                elements.adminContent.classList.add('hidden');
+                elements.userContent.classList.remove('hidden');
+                renderUserDashboard();
+            }
+        }
+
+        /**
+         * Renders the user-specific dashboard content, including the leaderboard and current task.
+         */
+        function renderUserDashboard() {
+            elements.leaderboard.innerHTML = ''; // Clear existing leaderboard
+            const sortedUsers = [...state.users]
+                .filter(u => !u.isAdmin)
+                .sort((a, b) => b.points - a.points); 
+            
+            if (sortedUsers.length > 0) {
+                sortedUsers.forEach((user, index) => {
+                    const li = document.createElement('li');
+                    li.className = `flex justify-between items-center py-2 ${user.id === state.currentUser.id ? 'font-bold text-blue-700' : 'text-gray-800'}`;
+                    li.innerHTML = `
+                        <span>${index + 1}. ${user.name}</span>
+                        <span>${user.points} points</span>
+                    `;
+                    elements.leaderboard.appendChild(li);
+                });
+            } else {
+                elements.leaderboard.innerHTML = '<li class="text-gray-500 text-center py-2">No users on leaderboard yet.</li>';
+            }
+
+            // Render Current Task info for user
+            const userTask = state.currentUser.tasks[0]; // Assuming user has one main task for now
+            if (userTask) {
+                const activeGlobalTask = state.allTasks.find(t => t.id === userTask.id);
+                if (activeGlobalTask) {
+                    elements.currentTaskTitle.textContent = activeGlobalTask.title;
+                    elements.currentTaskDescription.textContent = activeGlobalTask.description;
+                    
+                    const maxPoints = activeGlobalTask.maxPoints;
+                    const percentage = maxPoints > 0 ? (userTask.points / maxPoints) * 100 : 0;
+
+                    elements.taskProgressBar.style.width = `${percentage}%`;
+                    elements.taskProgressText.textContent = `Progress: ${percentage.toFixed(0)}% (${userTask.points} / ${maxPoints} pts)`;
+                } else {
+                    elements.currentTaskTitle.textContent = 'No Active Task';
+                    elements.currentTaskDescription.textContent = 'An administrator needs to define and activate a task.';
+                    elements.taskProgressBar.style.width = '0%';
+                    elements.taskProgressText.textContent = 'Progress: 0% (0 / 0 pts)';
+                }
+            } else {
+                elements.currentTaskTitle.textContent = 'No Task Assigned';
+                elements.currentTaskDescription.textContent = 'You have not been assigned a task yet. Please contact your administrator.';
+                elements.taskProgressBar.style.width = '0%';
+                elements.taskProgressText.textContent = 'Progress: 0% (0 / 0 pts)';
+            }
+
+            // Render Announcements for user
+            elements.announcementsList.innerHTML = '';
+            const visibleAnnouncements = state.announcements.filter(ann => ann.isVisible);
+            if (visibleAnnouncements.length > 0) {
+                visibleAnnouncements.forEach(ann => {
+                    const annDiv = document.createElement('div');
+                    annDiv.className = 'bg-blue-50 p-3 rounded-lg border border-blue-100';
+                    annDiv.innerHTML = `
+                        <p class="font-semibold text-blue-800 text-base">${ann.title}</p>
+                        <p class="text-sm text-gray-700 mt-1">${ann.content}</p>
+                        <p class="text-xs text-gray-500 mt-2 text-right">Published: ${ann.date}</p>
+                    `;
+                    elements.announcementsList.appendChild(annDiv);
+                });
+            } else {
+                elements.announcementsList.innerHTML = '<p class="text-gray-500">No new announcements.</p>';
+            }
+        }
+
+        /**
+         * Renders the admin dashboard, showing all non-admin users, tasks, and announcements.
+         */
+        function renderAdminDashboard() {
+            // Render Users
+            elements.adminUsersList.innerHTML = ''; 
+            const nonAdminUsers = state.users.filter(user => !user.isAdmin);
+
+            if (nonAdminUsers.length > 0) {
+                nonAdminUsers.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b border-gray-200 hover:bg-gray-50 transition-colors';
+                    row.innerHTML = `
+                        <td class="p-3 text-gray-700 font-medium break-all">${user.name} <span class="text-xs text-gray-500">(${user.email})</span></td>
+                        <td class="p-3 text-gray-600 text-center">${user.documents.length}</td>
+                        <td class="p-3 text-blue-600 font-semibold text-center">${user.points}</td>
+                        <td class="p-3 flex flex-wrap gap-2 justify-center sm:justify-start">
+                            <button data-user-id="${user.id}" class="admin-add-user-points bg-green-500 text-white px-2 py-1 rounded text-xs btn-hover hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 touch-target">Add 5</button>
+                            <button data-user-id="${user.id}" class="admin-reset-user-points bg-red-500 text-white px-2 py-1 rounded text-xs btn-hover hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 touch-target">Reset</button>
+                            <button data-user-id="${user.id}" class="admin-view-user-details bg-blue-500 text-white px-2 py-1 rounded text-xs btn-hover hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 touch-target">View</button>
+                            <button data-user-id="${user.id}" class="admin-delete-user bg-gray-500 text-white px-2 py-1 rounded text-xs btn-hover hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 touch-target">Delete</button>
+                        </td>
+                    `;
+                    elements.adminUsersList.appendChild(row);
+                });
+
+                // Attach event listeners for individual user actions
+                document.querySelectorAll('.admin-add-user-points').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const userId = e.target.dataset.userId;
+                        const user = state.users.find(u => u.id === userId);
+                        if (user) {
+                            user.points += 5;
+                            const task = user.tasks[0]; // Assuming user has one task
+                            if (task) task.points += 5;
+                            saveStateToLocalStorage();
+                            showToast(`Added 5 points to ${user.name}`, 'green');
+                            renderAdminDashboard(); 
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.admin-reset-user-points').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const userId = e.target.dataset.userId;
+                        const user = state.users.find(u => u.id === userId);
+                        if (user) {
+                            showConfirmationModal(
+                                'Reset User Data',
+                                `Are you sure you want to reset points and documents for ${user.name}? This cannot be undone.`,
+                                () => {
+                                    user.points = 0;
+                                    user.documents = []; 
+                                    user.tasks.forEach(task => {
+                                        task.completed = false;
+                                        task.points = 0;
+                                    });
+                                    saveStateToLocalStorage();
+                                    showToast(`Reset all data for ${user.name}`, 'red');
+                                    renderAdminDashboard(); 
+                                }
+                            );
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.admin-view-user-details').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const userId = e.target.dataset.userId;
+                        showAdminUserDetailsModal(userId);
+                    });
+                });
+
+                document.querySelectorAll('.admin-delete-user').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const userId = e.target.dataset.userId;
+                        deleteUser(userId); // Call the deleteUser function which includes confirmation
+                    });
+                });
+
+            } else {
+                elements.adminUsersList.innerHTML = '<tr><td colspan="4" class="p-3 text-center text-gray-500">No regular users registered.</td></tr>';
+            }
+
+            // Render Tasks
+            elements.tasksList.innerHTML = '';
+            if (state.allTasks.length > 0) {
+                state.allTasks.forEach(task => {
+                    const taskDiv = document.createElement('div');
+                    const activeBadge = task.isActive ? '<span class="ml-2 px-2 py-1 text-xs font-semibold bg-green-200 text-green-800 rounded-full">Active</span>' : '';
+                    taskDiv.className = 'bg-white p-4 rounded-lg shadow-sm border border-gray-100 relative';
+                    taskDiv.innerHTML = `
+                        <h4 class="font-semibold text-gray-800 mb-1">${task.title} ${activeBadge}</h4>
+                        <p class="text-sm text-gray-600">${task.description}</p>
+                        <p class="text-sm text-gray-500 mt-2">Max Points: ${task.maxPoints}</p>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <button data-task-id="${task.id}" class="edit-task-btn bg-yellow-500 text-white px-3 py-1 rounded text-xs btn-hover hover:bg-yellow-600 touch-target">Edit</button>
+                            <button data-task-id="${task.id}" class="delete-task-btn bg-gray-500 text-white px-3 py-1 rounded text-xs btn-hover hover:bg-gray-600 touch-target">Delete</button>
+                            <button data-task-id="${task.id}" class="set-active-task-btn ${task.isActive ? 'bg-indigo-700' : 'bg-indigo-500'} text-white px-3 py-1 rounded text-xs btn-hover hover:bg-indigo-600 touch-target">${task.isActive ? 'Current' : 'Set Active'}</button>
+                        </div>
+                    `;
+                    elements.tasksList.appendChild(taskDiv);
+                });
+
+                document.querySelectorAll('.delete-task-btn').forEach(button => {
+                    button.addEventListener('click', (e) => deleteTask(e.target.dataset.taskId));
+                });
+                document.querySelectorAll('.set-active-task-btn').forEach(button => {
+                    button.addEventListener('click', (e) => setActiveTask(e.target.dataset.taskId));
+                });
+                // Edit task functionality to be implemented (e.g., open a modal with task details)
+                document.querySelectorAll('.edit-task-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        showToast('Edit Task feature coming soon!', 'blue');
+                        // In a real app, you'd open a modal to edit task details here
+                    });
+                });
+
+            } else {
+                elements.tasksList.innerHTML = '<p class="text-gray-500">No tasks defined yet.</p>';
+            }
+
+            // Render Announcements for Admin
+            elements.adminAnnouncementsList.innerHTML = '';
+            if (state.announcements.length > 0) {
+                state.announcements.forEach(ann => {
+                    const annDiv = document.createElement('div');
+                    const visibilityBadge = ann.isVisible ? '<span class="ml-2 px-2 py-1 text-xs font-semibold bg-green-200 text-green-800 rounded-full">Visible</span>' : '<span class="ml-2 px-2 py-1 text-xs font-semibold bg-red-200 text-red-800 rounded-full">Hidden</span>';
+                    annDiv.className = 'bg-white p-4 rounded-lg shadow-sm border border-gray-100 relative';
+                    annDiv.innerHTML = `
+                        <h4 class="font-semibold text-gray-800 mb-1">${ann.title} ${visibilityBadge}</h4>
+                        <p class="text-sm text-gray-600">${ann.content}</p>
+                        <p class="text-xs text-gray-500 mt-2 text-right">Published: ${ann.date}</p>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <button data-announcement-id="${ann.id}" class="delete-announcement-btn bg-gray-500 text-white px-3 py-1 rounded text-xs btn-hover hover:bg-gray-600 touch-target">Delete</button>
+                            <!-- Could add an edit or toggle visibility button here -->
+                        </div>
+                    `;
+                    elements.adminAnnouncementsList.appendChild(annDiv);
+                });
+
+                document.querySelectorAll('.delete-announcement-btn').forEach(button => {
+                    button.addEventListener('click', (e) => deleteAnnouncement(e.target.dataset.announcementId));
+                });
+            } else {
+                elements.adminAnnouncementsList.innerHTML = '<p class="text-gray-500">No announcements yet.</p>';
+            }
+        }
+
+        /**
+         * Renders the specific task screen, showing user's progress and documents.
+         */
+        function renderTaskScreen() {
+            if (!state.currentUser) {
+                renderAuthScreen();
+                return;
+            }
+            // Hide other main screens
+            elements.authScreen.classList.add('hidden');
+            elements.mainApp.classList.add('hidden');
+            elements.profileModal.classList.add('hidden'); 
+            elements.adminUserDetailModal.classList.add('hidden'); 
+            elements.confirmationModal.classList.add('hidden'); // Ensure confirmation modal is hidden
+            elements.taskScreen.classList.remove('hidden'); 
+            document.body.classList.remove('overflow-hidden'); 
+
+            const userTask = state.currentUser.tasks[0]; // Assuming user has one main task for now
+            if (userTask) {
+                const globalTask = state.allTasks.find(t => t.id === userTask.id);
+                elements.taskScreenTitle.textContent = globalTask ? globalTask.title : userTask.title;
+
+                const maxPoints = globalTask ? globalTask.maxPoints : 0;
+                const percentage = maxPoints > 0 ? (userTask.points / maxPoints) * 100 : 0;
+
+                elements.taskPoints.textContent = userTask.points;
+                elements.taskCompleted.textContent = userTask.completed ? 'Yes' : 'No';
+                elements.taskCompleted.className = userTask.completed ? 'text-2xl font-bold text-green-600' : 'text-2xl font-bold text-red-500';
+                
+                elements.taskProgressDetailBar.style.width = `${percentage}%`;
+                elements.taskProgressDetailText.textContent = `Progress: ${percentage.toFixed(0)}% (${userTask.points} / ${maxPoints} pts)`;
+
+            } else {
+                elements.taskScreenTitle.textContent = 'No Task Assigned';
+                elements.taskPoints.textContent = '0';
+                elements.taskCompleted.textContent = 'N/A';
+                elements.taskCompleted.className = 'text-2xl font-bold text-gray-500';
+                elements.taskProgressDetailBar.style.width = '0%';
+                elements.taskProgressDetailText.textContent = 'Progress: 0% (0 / 0 pts)';
+            }
+
+            renderDocuments(); // Render current user's uploaded documents
+        }
+
+        /* ----- Event Listeners Setup ----- */
+
+        /**
+         * Sets up all global event listeners for the application.
+         */
+        function setupEventListeners() {
+            // Auth Screen Listeners
+            elements.authForm.addEventListener('submit', handleAuthSubmit);
+            elements.toggleAuth.addEventListener('click', toggleAuthMode);
+
+            // Main App Header Listeners
+            elements.logoutBtn.addEventListener('click', logout);
+            elements.profileBtn.addEventListener('click', showProfileModal); 
+
+            // Profile Modal Listeners (for current user)
+            elements.closeProfileModalBtn.addEventListener('click', hideProfileModal); 
+            elements.modalCloseBtn.addEventListener('click', hideProfileModal); 
+            elements.profilePicInputModal.addEventListener('change', handleProfilePicUpload); 
+
+            // Admin User Detail Modal Listeners
+            elements.closeAdminUserModal.addEventListener('click', hideAdminUserDetailsModal);
+            elements.adminModalCloseBtn.addEventListener('click', hideAdminUserDetailsModal);
+
+            // Confirmation Modal Listeners
+            // Buttons wired up dynamically in showConfirmationModal
+
+            // User Content Listeners
+            elements.goToTask.addEventListener('click', renderTaskScreen);
+
+            // Task Screen Listeners
+            elements.backBtn.addEventListener('click', renderMainApp);
+            setupFileUpload(); // Setup for PDF file uploads
+
+            // Admin Quick Actions Listeners
+            elements.adminAddPoints.addEventListener('click', () => {
+                showConfirmationModal(
+                    'Add Points to All',
+                    'Are you sure you want to add 5 points to all regular users?',
+                    () => {
+                        state.users.forEach(user => {
+                            if (!user.isAdmin) {
+                                user.points += 5;
+                                const task = user.tasks[0]; 
+                                if (task) task.points += 5; 
+                            }
+                        });
+                        saveStateToLocalStorage();
+                        showToast('+5 points to all regular users!', 'green');
+                        renderAdminDashboard(); 
+                    }
+                );
+            });
+
+            elements.adminResetPoints.addEventListener('click', () => {
+                showConfirmationModal(
+                    'Reset All User Data',
+                    'Are you sure you want to reset points and documents for ALL regular users? This cannot be undone.',
+                    () => {
+                        state.users.forEach(user => {
+                            if (!user.isAdmin) {
+                                user.points = 0;
+                                user.documents = [];
+                                user.tasks.forEach(task => {
+                                    task.completed = false;
+                                    task.points = 0;
+                                });
+                            }
+                        });
+                        saveStateToLocalStorage();
+                        showToast('All regular user data reset!', 'red');
+                        renderAdminDashboard(); 
+                    }
+                );
+            });
+
+            // Admin Task Management Listeners
+            elements.addTaskForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                addTask(
+                    elements.newTaskTitle.value,
+                    elements.newTaskDescription.value,
+                    elements.newTaskMaxPoints.value
+                );
+                elements.addTaskForm.reset();
+            });
+
+            // Admin Announcement Management Listeners
+            elements.addAnnouncementForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                addAnnouncement(
+                    elements.newAnnouncementTitle.value,
+                    elements.newAnnouncementContent.value
+                );
+                elements.addAnnouncementForm.reset();
+            });
+        }
+
+        // Initialize the application and set up all event listeners when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeApp();
+            setupEventListeners();
+        });
+
+    </script>
+</body>
+</html>
