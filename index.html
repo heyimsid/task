@@ -8,7 +8,7 @@
     <style>
         /* Custom styles for animations and specific elements */
         .btn-hover:active { transform: scale(0.98); }
-        .touch-target { min-height: 48px; } /* Ensures sufficient touch target size */
+        .touch-target { min-height: 48px; } /* Ensures sufficient touch target size for accessibility */
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .fade-in { animation: fadeIn 0.3s ease-in; }
         .document-grid {
@@ -135,9 +135,9 @@
         <!-- Main App Content -->
         <div id="main-app" class="hidden fade-in">
             <!-- Header -->
-            <header class="bg-white p-4 rounded-xl shadow-md mb-6 flex justify-between items-center">
-                <h1 class="text-xl font-bold text-gray-800">Task Monitor Pro</h1>
-                <div class="flex items-center space-x-2">
+            <header class="bg-white p-4 rounded-xl shadow-md mb-6 flex justify-between items-center flex-wrap">
+                <h1 class="text-xl font-bold text-gray-800 mb-2 sm:mb-0">Task Monitor Pro</h1>
+                <div class="flex items-center space-x-2 mt-2 sm:mt-0">
                     <!-- Profile Button with image or initial -->
                     <button id="profile-btn" class="w-10 h-10 rounded-full flex items-center justify-center btn-hover transition duration-200 ease-in-out overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 touch-target">
                         <img id="header-profile-pic" class="w-full h-full object-cover hidden" alt="Profile Picture">
@@ -211,14 +211,14 @@
         <!-- Task Screen -->
         <div id="task-screen" class="hidden fade-in">
             <div class="bg-white p-6 rounded-xl shadow-md mb-4">
-                <div class="flex justify-between items-center mb-4">
-                    <button id="back-btn" class="flex items-center text-blue-600 btn-hover transition duration-200 ease-in-out hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 touch-target">
+                <div class="flex justify-between items-center mb-4 flex-wrap">
+                    <button id="back-btn" class="flex items-center text-blue-600 btn-hover transition duration-200 ease-in-out hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 touch-target mb-2 sm:mb-0">
                         <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                         </svg>
                         Back to Dashboard
                     </button>
-                    <h2 class="text-xl font-bold text-gray-800">Python Task</h2>
+                    <h2 class="text-xl font-bold text-gray-800 mb-2 sm:mb-0">Python Task</h2>
                     <div></div> <!-- Placeholder for spacing -->
                 </div>
 
@@ -267,7 +267,7 @@
     <!-- Toast Container (for notifications) -->
     <div id="toast-container" class="toast-container"></div>
 
-    <!-- Profile Modal -->
+    <!-- Profile Modal (for current user) -->
     <div id="profile-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center modal-overlay">
         <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm modal-content relative">
             <button id="close-profile-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl focus:outline-none touch-target">&times;</button>
@@ -277,7 +277,7 @@
                 <div class="relative mb-4">
                     <img id="modal-profile-pic" class="modal-profile-pic-lg hidden" src="" alt="Profile Picture">
                     <div id="modal-profile-initial" class="modal-profile-pic-lg bg-gray-200 flex items-center justify-center text-5xl font-semibold text-gray-700">U</div>
-                    <label for="profile-pic-input-modal" class="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-2 cursor-pointer shadow-md hover:bg-blue-600 transition-colors">
+                    <label for="profile-pic-input-modal" class="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-2 cursor-pointer shadow-md hover:bg-blue-600 transition-colors touch-target">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -291,6 +291,35 @@
             </div>
             
             <button id="modal-close-btn" class="w-full bg-gray-300 text-gray-800 p-3 rounded-lg font-medium btn-hover transition duration-200 ease-in-out hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 touch-target">Close</button>
+        </div>
+    </div>
+
+    <!-- Admin User Detail Modal (for viewing other users by admin) -->
+    <div id="admin-user-detail-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center modal-overlay">
+        <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-lg modal-content relative">
+            <button id="close-admin-user-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl focus:outline-none touch-target">&times;</button>
+            <h3 class="text-2xl font-bold text-center mb-6 text-purple-700">User Details</h3>
+            
+            <div class="flex flex-col items-center mb-6">
+                <img id="admin-modal-profile-pic" class="modal-profile-pic-lg mb-4 hidden" src="" alt="User Profile Picture">
+                <div id="admin-modal-profile-initial" class="modal-profile-pic-lg bg-gray-200 flex items-center justify-center text-5xl font-semibold text-gray-700 mb-4">U</div>
+                <p id="admin-modal-user-name" class="text-xl font-semibold text-gray-800 mb-2"></p>
+                <p id="admin-modal-user-email" class="text-gray-600 mb-2"></p>
+                <p id="admin-modal-user-points" class="text-lg font-medium text-blue-700"></p>
+                <div class="text-center mt-4">
+                    <p class="font-semibold text-gray-700">Python Task Progress:</p>
+                    <p id="admin-modal-task-points" class="text-xl font-bold text-blue-800">0 pts</p>
+                    <p id="admin-modal-task-completed" class="text-lg"></p>
+                </div>
+            </div>
+
+            <h4 class="text-lg font-semibold text-gray-700 mb-3">Documents Uploaded:</h4>
+            <div id="admin-modal-user-documents-grid" class="document-grid mb-6">
+                <!-- User documents will be loaded here -->
+            </div>
+            <p id="admin-modal-no-documents" class="text-gray-500 text-center col-span-full hidden">No documents uploaded by this user.</p>
+            
+            <button id="admin-modal-close-btn" class="w-full bg-gray-300 text-gray-800 p-3 rounded-lg font-medium btn-hover transition duration-200 ease-in-out hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 touch-target">Close</button>
         </div>
     </div>
 
@@ -356,7 +385,7 @@
             // Toast notification container
             toastContainer: document.getElementById('toast-container'),
 
-            // New: Profile Modal elements
+            // Profile Modal elements (for current user)
             profileModal: document.getElementById('profile-modal'),
             modalProfilePic: document.getElementById('modal-profile-pic'),
             modalProfileInitial: document.getElementById('modal-profile-initial'),
@@ -365,7 +394,21 @@
             modalUserPoints: document.getElementById('modal-user-points'),
             profilePicInputModal: document.getElementById('profile-pic-input-modal'), // For profile pic upload in modal
             closeProfileModalBtn: document.getElementById('close-profile-modal'), // Close button for modal
-            modalCloseBtn: document.getElementById('modal-close-btn') // Another close button for modal (redundant, using first one)
+            modalCloseBtn: document.getElementById('modal-close-btn'), // Another close button for modal
+
+            // Admin User Detail Modal elements (new)
+            adminUserDetailModal: document.getElementById('admin-user-detail-modal'),
+            closeAdminUserModal: document.getElementById('close-admin-user-modal'),
+            adminModalProfilePic: document.getElementById('admin-modal-profile-pic'),
+            adminModalProfileInitial: document.getElementById('admin-modal-profile-initial'),
+            adminModalUserName: document.getElementById('admin-modal-user-name'),
+            adminModalUserEmail: document.getElementById('admin-modal-user-email'),
+            adminModalUserPoints: document.getElementById('admin-modal-user-points'),
+            adminModalTaskPoints: document.getElementById('admin-modal-task-points'),
+            adminModalTaskCompleted: document.getElementById('admin-modal-task-completed'),
+            adminModalUserDocumentsGrid: document.getElementById('admin-modal-user-documents-grid'),
+            adminModalNoDocuments: document.getElementById('admin-modal-no-documents'),
+            adminModalCloseBtn: document.getElementById('admin-modal-close-btn')
         };
 
         /* ----- Utility Functions ----- */
@@ -418,12 +461,14 @@
          * Attempts to restore a user session from localStorage.
          */
         function initializeApp() {
+            console.log('initializeApp called.');
             // Check if admin user exists; if not, create a default admin
             const adminExists = state.users.some(user => 
                 user.email === state.adminCredentials.email && user.isAdmin
             );
             
             if (!adminExists) {
+                console.log('Admin user not found, creating default admin.');
                 const adminUser = {
                     id: 'admin-' + Date.now(),
                     ...state.adminCredentials,
@@ -438,16 +483,27 @@
                 saveUsersToLocalStorage(); // Persist the new admin user
             }
             
+            // Reload users from localStorage to ensure latest state after potential admin creation
+            state.users = localStorage.getItem('users') ? JSON.parse(localStorage.getItem('users')) : [];
+            console.log('Current users from localStorage:', state.users);
+
             // Attempt to restore the previous user session
             const storedCurrentUserEmail = localStorage.getItem('currentUserEmail');
+            console.log('Stored current user email:', storedCurrentUserEmail);
+
             if (storedCurrentUserEmail) {
                 const user = state.users.find(u => u.email === storedCurrentUserEmail);
                 if (user) {
                     state.currentUser = user;
+                    console.log('Session restored for user:', state.currentUser.email);
                     renderMainApp(); // Render main app if session restored
                     return; // Exit early as user is logged in
+                } else {
+                    console.log('Stored user email found but user not in state.users. Clearing invalid session.');
+                    localStorage.removeItem('currentUserEmail'); // Clear invalid session
                 }
             }
+            console.log('No active session found. Rendering auth screen.');
             renderAuthScreen(); // If no session or user not found, show auth screen
         }
 
@@ -519,6 +575,7 @@
             state.currentUser = newUser; // Set as current user
             localStorage.setItem('currentUserEmail', newUser.email); // Store email for session persistence
             saveUsersToLocalStorage(); // Save updated users array
+            console.log('User signed up and session set:', newUser.email);
             showToast('Account created successfully!', 'green');
             renderMainApp(); // Transition to the main application view
         }
@@ -558,6 +615,7 @@
 
                 state.currentUser = adminUser;
                 localStorage.setItem('currentUserEmail', adminUser.email);
+                console.log('Admin logged in and session set:', adminUser.email);
                 showToast('Welcome, Admin!', 'purple');
                 renderMainApp();
                 return; // Exit after successful admin login
@@ -566,11 +624,13 @@
             // If not admin, try to find a regular user
             const user = state.users.find(u => u.email === email && u.password === password);
             if (!user) {
+                console.log('Invalid login attempt for:', email);
                 throw new Error('Invalid email or password.'); // Authentication failed
             }
             
             state.currentUser = user; // Set as current user
             localStorage.setItem('currentUserEmail', user.email);
+            console.log('User logged in and session set:', user.email);
             showToast(`Welcome back, ${user.name}!`, 'green');
             renderMainApp(); // Transition to main app for regular user
         }
@@ -676,12 +736,17 @@
         }
 
         /**
-         * Renders the list of uploaded documents for the current user.
+         * Renders the list of uploaded documents for a given user.
+         * This function is now generalized to be used by both user's own documents and admin's view.
+         * @param {HTMLElement} targetGrid - The HTML element (e.g., a div) where documents should be rendered.
+         * @param {Array} documents - The array of document objects to display.
+         * @param {HTMLElement} noDocumentsMessageElement - Optional: Element to show if no documents.
          */
-        function renderDocuments() {
-            elements.documentGrid.innerHTML = ''; // Clear existing documents
-            if (state.currentUser && state.currentUser.documents.length > 0) {
-                state.currentUser.documents.forEach(doc => {
+        function renderDocumentsForUser(targetGrid, documents, noDocumentsMessageElement = null) {
+            targetGrid.innerHTML = ''; // Clear existing documents
+            if (documents && documents.length > 0) {
+                if (noDocumentsMessageElement) noDocumentsMessageElement.classList.add('hidden');
+                documents.forEach(doc => {
                     const docCard = document.createElement('div');
                     docCard.className = 'document-card cursor-pointer';
                     docCard.innerHTML = `
@@ -689,18 +754,27 @@
                         <p class="text-sm font-medium text-gray-800">${doc.name}</p>
                         <p class="text-xs text-gray-500">${(doc.size / 1024).toFixed(1)} KB</p>
                     `;
-                    // Attach event listener to view/download document (simulated for demo)
                     docCard.addEventListener('click', () => {
                         showToast(`Simulating view/download for: ${doc.filename}`, 'blue');
                     });
-                    elements.documentGrid.appendChild(docCard);
+                    targetGrid.appendChild(docCard);
                 });
             } else {
-                elements.documentGrid.innerHTML = '<p class="text-gray-500 text-center col-span-full">No documents uploaded yet.</p>';
+                if (noDocumentsMessageElement) {
+                    noDocumentsMessageElement.classList.remove('hidden');
+                    targetGrid.innerHTML = ''; // Ensure no other message is there
+                } else {
+                    targetGrid.innerHTML = '<p class="text-gray-500 text-center col-span-full">No documents uploaded yet.</p>';
+                }
             }
         }
 
-        /* ----- Profile Modal Functions ----- */
+        // Original renderDocuments is now a wrapper for renderDocumentsForUser specific to current user's task screen
+        function renderDocuments() {
+            renderDocumentsForUser(elements.documentGrid, state.currentUser.documents);
+        }
+
+        /* ----- Profile Modal Functions (for current user) ----- */
 
         /**
          * Displays the user profile modal with current user's details.
@@ -710,7 +784,7 @@
                 showToast('Please log in to view your profile.', 'red');
                 return;
             }
-
+            document.body.classList.add('overflow-hidden'); // Prevent background scrolling
             elements.profileModal.classList.remove('hidden'); // Show the modal overlay
 
             // Populate modal with current user data
@@ -734,6 +808,7 @@
          * Hides the user profile modal.
          */
         function hideProfileModal() {
+            document.body.classList.remove('overflow-hidden'); // Re-enable background scrolling
             elements.profileModal.classList.add('hidden'); // Hide the modal overlay
         }
 
@@ -765,6 +840,60 @@
             }
         }
 
+        /* ----- Admin User Detail Modal Functions (new) ----- */
+
+        /**
+         * Displays the admin user details modal for a specific user.
+         * @param {string} userId - The ID of the user to display.
+         */
+        function showAdminUserDetailsModal(userId) {
+            const userToView = state.users.find(user => user.id === userId);
+            if (!userToView) {
+                showToast('User not found!', 'red');
+                return;
+            }
+
+            document.body.classList.add('overflow-hidden'); // Prevent background scrolling
+            elements.adminUserDetailModal.classList.remove('hidden');
+
+            // Populate modal with selected user's data
+            if (userToView.profilePicture) {
+                elements.adminModalProfilePic.src = userToView.profilePicture;
+                elements.adminModalProfilePic.classList.remove('hidden');
+                elements.adminModalProfileInitial.classList.add('hidden');
+            } else {
+                elements.adminModalProfilePic.src = '';
+                elements.adminModalProfilePic.classList.add('hidden');
+                elements.adminModalProfileInitial.classList.remove('hidden');
+                elements.adminModalProfileInitial.textContent = userToView.name ? userToView.name.charAt(0).toUpperCase() : 'U';
+            }
+            
+            elements.adminModalUserName.textContent = `Name: ${userToView.name}`;
+            elements.adminModalUserEmail.textContent = `Email: ${userToView.email}`;
+            elements.adminModalUserPoints.textContent = `Total Points: ${userToView.points}`;
+
+            const userTask = userToView.tasks.find(t => t.id === 'python');
+            if (userTask) {
+                elements.adminModalTaskPoints.textContent = `${userTask.points} pts`;
+                elements.adminModalTaskCompleted.textContent = userTask.completed ? 'Completed' : 'Not Completed';
+                elements.adminModalTaskCompleted.className = userTask.completed ? 'text-lg text-green-600' : 'text-lg text-red-500';
+            } else {
+                 elements.adminModalTaskPoints.textContent = 'N/A';
+                 elements.adminModalTaskCompleted.textContent = 'No task assigned';
+                 elements.adminModalTaskCompleted.className = 'text-lg text-gray-500';
+            }
+
+            renderDocumentsForUser(elements.adminModalUserDocumentsGrid, userToView.documents, elements.adminModalNoDocuments);
+        }
+
+        /**
+         * Hides the admin user details modal.
+         */
+        function hideAdminUserDetailsModal() {
+            document.body.classList.remove('overflow-hidden'); // Re-enable background scrolling
+            elements.adminUserDetailModal.classList.add('hidden');
+        }
+
         /* ----- Render Functions (UI Updates) ----- */
 
         /**
@@ -774,12 +903,15 @@
             elements.authScreen.classList.remove('hidden');
             elements.mainApp.classList.add('hidden');
             elements.taskScreen.classList.add('hidden');
-            elements.profileModal.classList.add('hidden'); // Ensure modal is hidden
+            elements.profileModal.classList.add('hidden'); // Ensure personal profile modal is hidden
+            elements.adminUserDetailModal.classList.add('hidden'); // Ensure admin user detail modal is hidden
+            document.body.classList.remove('overflow-hidden'); // Ensure body scroll is re-enabled
+
             elements.authForm.reset(); // Clear form fields
             clearAuthError(); // Clear auth error messages
             elements.authTitle.textContent = 'Login';
             elements.toggleAuth.textContent = 'Create new account';
-            elements.nameField.classList.add('hidden'); // Hide name field for login
+            elements.nameField.classList.add('hidden'); // Hide name field for login by default
             // Clear header profile pic display on logout
             elements.headerProfilePic.classList.add('hidden');
             elements.headerProfilePic.src = '';
@@ -799,10 +931,12 @@
             // Hide all other main screens
             elements.authScreen.classList.add('hidden');
             elements.taskScreen.classList.add('hidden');
-            elements.profileModal.classList.add('hidden'); // Ensure modal is hidden
+            elements.profileModal.classList.add('hidden'); // Ensure personal profile modal is hidden
+            elements.adminUserDetailModal.classList.add('hidden'); // Ensure admin user detail modal is hidden
             elements.mainApp.classList.remove('hidden'); // Show main app
+            document.body.classList.remove('overflow-hidden'); // Ensure body scroll is re-enabled
 
-            // Update profile button in header
+            // Update profile button in header based on current user's profile picture
             if (state.currentUser.profilePicture) {
                 elements.headerProfilePic.src = state.currentUser.profilePicture;
                 elements.headerProfilePic.classList.remove('hidden');
@@ -869,13 +1003,14 @@
                         <td class="p-3 text-blue-600 font-semibold">${user.points}</td>
                         <td class="p-3">
                             <button data-user-id="${user.id}" class="admin-add-user-points bg-green-500 text-white px-3 py-1 rounded text-sm mr-2 btn-hover hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 touch-target">Add 5</button>
-                            <button data-user-id="${user.id}" class="admin-reset-user-points bg-red-500 text-white px-3 py-1 rounded text-sm btn-hover hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 touch-target">Reset</button>
+                            <button data-user-id="${user.id}" class="admin-reset-user-points bg-red-500 text-white px-3 py-1 rounded text-sm mr-2 btn-hover hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 touch-target">Reset</button>
+                            <button data-user-id="${user.id}" class="admin-view-user-details bg-blue-500 text-white px-3 py-1 rounded text-sm btn-hover hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 touch-target">View Details</button>
                         </td>
                     `;
                     elements.adminUsersList.appendChild(row);
                 });
 
-                // Attach event listeners to dynamically created buttons
+                // Attach event listeners to dynamically created buttons for individual user actions
                 document.querySelectorAll('.admin-add-user-points').forEach(button => {
                     button.addEventListener('click', (e) => {
                         const userId = e.target.dataset.userId;
@@ -896,7 +1031,7 @@
                         const userId = e.target.dataset.userId;
                         const user = state.users.find(u => u.id === userId);
                         if (user) {
-                            // Instead of confirm(), directly proceed with action and provide toast feedback
+                            // Replaced confirm() with direct action, assuming the user understands its impact from button label
                             user.points = 0;
                             user.documents = []; 
                             user.tasks.forEach(task => { // Reset task progress
@@ -907,6 +1042,14 @@
                             showToast(`Reset all data for ${user.name}`, 'red');
                             renderAdminDashboard(); // Re-render to update points
                         }
+                    });
+                });
+
+                // New: Attach event listeners for "View Details" buttons
+                document.querySelectorAll('.admin-view-user-details').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const userId = e.target.dataset.userId;
+                        showAdminUserDetailsModal(userId);
                     });
                 });
 
@@ -926,8 +1069,10 @@
             // Hide other main screens
             elements.authScreen.classList.add('hidden');
             elements.mainApp.classList.add('hidden');
-            elements.profileModal.classList.add('hidden'); // Ensure modal is hidden
+            elements.profileModal.classList.add('hidden'); // Ensure personal profile modal is hidden
+            elements.adminUserDetailModal.classList.add('hidden'); // Ensure admin user detail modal is hidden
             elements.taskScreen.classList.remove('hidden'); // Show task screen
+            document.body.classList.remove('overflow-hidden'); // Ensure body scroll is re-enabled
 
             const pythonTask = state.currentUser.tasks.find(t => t.id === 'python');
             if (pythonTask) {
@@ -937,7 +1082,7 @@
                 elements.taskCompleted.className = pythonTask.completed ? 'text-2xl font-bold text-green-600' : 'text-2xl font-bold text-red-500';
             }
 
-            renderDocuments(); // Render user's uploaded documents
+            renderDocuments(); // Render current user's uploaded documents
         }
 
         /* ----- Event Listeners Setup ----- */
@@ -952,12 +1097,16 @@
 
             // Main App Header Listeners
             elements.logoutBtn.addEventListener('click', logout);
-            elements.profileBtn.addEventListener('click', showProfileModal); // Open profile modal on click
+            elements.profileBtn.addEventListener('click', showProfileModal); // Open personal profile modal on click
 
-            // Profile Modal Listeners
+            // Profile Modal Listeners (for current user)
             elements.closeProfileModalBtn.addEventListener('click', hideProfileModal); // Close button (X)
-            elements.modalCloseBtn.addEventListener('click', hideProfileModal); // Close button (Close)
+            elements.modalCloseBtn.addEventListener('click', hideProfileModal); // Close button ("Close")
             elements.profilePicInputModal.addEventListener('change', handleProfilePicUpload); // Handle profile pic upload
+
+            // Admin User Detail Modal Listeners (new)
+            elements.closeAdminUserModal.addEventListener('click', hideAdminUserDetailsModal);
+            elements.adminModalCloseBtn.addEventListener('click', hideAdminUserDetailsModal);
 
             // User Content Listeners
             elements.goToTask.addEventListener('click', renderTaskScreen);
@@ -981,7 +1130,6 @@
             });
 
             elements.adminResetPoints.addEventListener('click', () => {
-                // Replaced confirm() with direct action, assuming the user understands its impact from button label
                 showToast('Resetting all regular user data...', 'red');
                 state.users.forEach(user => {
                     if (!user.isAdmin) {
