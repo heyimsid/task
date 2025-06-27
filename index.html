@@ -89,6 +89,8 @@
             animation: fadeIn 0.3s ease-out;
             max-height: 90vh; /* Limit height for responsiveness */
             overflow-y: auto; /* Enable scrolling for long content */
+            width: 90%; /* Responsive width for modals */
+            max-width: 500px; /* Max width for larger screens */
         }
         .modal-profile-pic-lg {
             width: 120px;
@@ -97,11 +99,42 @@
             border-radius: 50%;
             border: 4px solid #a78bfa; /* A nice purple border */
         }
+
+        /* Progress Bar styles */
+        .progress-bar-container {
+            background-color: #e2e8f0;
+            border-radius: 9999px; /* Full rounded corners */
+            height: 8px;
+            width: 100%;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .progress-bar {
+            background-color: #4c51bf; /* Indigo color */
+            height: 100%;
+            width: 0%;
+            border-radius: 9999px;
+            transition: width 0.5s ease-in-out;
+        }
+
+        /* Status badge styles */
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 0.75rem; /* text-xs */
+            font-weight: 600; /* font-semibold */
+            margin-left: 8px; /* ml-2 */
+        }
+        .status-pending { background-color: #fbd38d; color: #9c4221; } /* yellow-300, yellow-800 */
+        .status-approved { background-color: #a7f3d0; color: #065f46; } /* green-200, green-800 */
+        .status-rejected { background-color: #fecaca; color: #991b1b; } /* red-200, red-800 */
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
     <div id="app" class="container mx-auto px-4 py-6 w-full max-w-4xl">
         
+        <!-- Auth Screen (Login/Sign Up) -->
         <div id="auth-screen" class="min-h-screen flex items-center justify-center fade-in">
             <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
                 <h2 id="auth-title" class="text-2xl font-bold text-center mb-6">Login</h2>
@@ -131,10 +164,13 @@
             </div>
         </div>
 
+        <!-- Main App Content -->
         <div id="main-app" class="hidden fade-in">
-            <header class="bg-white p-4 rounded-xl shadow-md mb-6 flex justify-between items-center flex-wrap">
+            <!-- Header -->
+            <header class="bg-white p-4 rounded-xl shadow-md mb-6 flex flex-col sm:flex-row justify-between items-center">
                 <h1 class="text-xl font-bold text-gray-800 mb-2 sm:mb-0">Task Monitor Pro</h1>
                 <div class="flex items-center space-x-2 mt-2 sm:mt-0">
+                    <!-- Profile Button with image or initial -->
                     <button id="profile-btn" class="w-10 h-10 rounded-full flex items-center justify-center btn-hover transition duration-200 ease-in-out overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 touch-target">
                         <img id="header-profile-pic" class="w-full h-full object-cover hidden" alt="Profile Picture">
                         <span id="profile-initial" class="font-medium text-gray-700 text-lg">U</span>
@@ -145,15 +181,31 @@
                 </div>
             </header>
 
+            <!-- User Content Area -->
             <div id="user-content">
+                <!-- Announcements Section -->
+                <div class="bg-white p-6 rounded-xl shadow-md mb-4" id="user-announcements-section">
+                    <h3 class="text-lg font-semibold mb-3 text-gray-700">Announcements</h3>
+                    <div id="announcements-list" class="space-y-3">
+                        <!-- Dynamic announcements will be loaded here -->
+                        <p class="text-gray-500">No new announcements.</p>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="bg-white p-6 rounded-xl shadow-md">
                         <h3 class="text-lg font-semibold mb-3 text-gray-700">Current Task</h3>
                         <div class="bg-blue-50 p-4 rounded-lg">
-                            <p class="font-medium text-blue-800">Python Programming</p>
-                            <p class="text-gray-600 my-2">Complete the exercises and submit your notes</p>
-                            <button id="go-to-task" class="bg-blue-600 text-white px-4 py-2 rounded-lg w-full mt-2 btn-hover transition duration-200 ease-in-out hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 touch-target">
-                                Start Task
+                            <p class="font-medium text-blue-800" id="current-task-title">No Active Task</p>
+                            <p class="text-gray-600 my-2" id="current-task-description"></p>
+                            <div class="mt-4">
+                                <p class="text-sm text-gray-600" id="task-progress-text">Progress: 0% (0 / 0 pts)</p>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" id="task-progress-bar" style="width: 0%;"></div>
+                                </div>
+                            </div>
+                            <button id="go-to-task" class="bg-blue-600 text-white px-4 py-2 rounded-lg w-full mt-4 btn-hover transition duration-200 ease-in-out hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 touch-target">
+                                Go to Task
                             </button>
                         </div>
                     </div>
@@ -161,15 +213,53 @@
                     <div class="bg-white p-6 rounded-xl shadow-md">
                         <h3 class="text-lg font-semibold mb-3 text-gray-700">Leaderboard</h3>
                         <ul id="leaderboard" class="divide-y divide-gray-200">
-                            </ul>
+                            <!-- Dynamic content for leaderboard -->
+                        </ul>
                     </div>
                 </div>
             </div>
 
+            <!-- Admin Content Area -->
             <div id="admin-content" class="hidden">
                 <div class="bg-white p-6 rounded-xl shadow-md mb-6">
                     <h2 class="text-xl font-bold mb-4 text-purple-700">Admin Dashboard</h2>
                     
+                    <!-- Admin Quick Actions -->
+                    <div class="space-y-4 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-700">Quick Actions (All Users)</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button id="admin-add-points" class="bg-green-600 text-white p-3 rounded-lg btn-hover transition duration-200 ease-in-out hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 touch-target">
+                                +5 to All Regular Users
+                            </button>
+                            <button id="admin-reset-points" class="bg-red-600 text-white p-3 rounded-lg btn-hover transition duration-200 ease-in-out hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 touch-target">
+                                Reset All Regular Users Data
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Pending Document Approvals Section -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold mb-3 text-gray-700">Pending Document Approvals</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full border-collapse min-w-max">
+                                <thead>
+                                    <tr class="bg-yellow-100 text-yellow-800">
+                                        <th class="p-3 text-left font-semibold">User</th>
+                                        <th class="p-3 text-left font-semibold">Document</th>
+                                        <th class="p-3 text-left font-semibold">Uploaded</th>
+                                        <th class="p-3 text-left font-semibold">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pending-documents-list">
+                                    <!-- Dynamic content for pending documents -->
+                                    <tr><td colspan="4" class="p-3 text-center text-gray-500">No documents pending approval.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Manage Users Table -->
+                    <h3 class="text-lg font-semibold mb-3 text-gray-700">Manage Users</h3>
                     <div class="mb-6 overflow-x-auto">
                         <table class="w-full border-collapse min-w-max">
                             <thead>
@@ -181,25 +271,63 @@
                                 </tr>
                             </thead>
                             <tbody id="admin-users-list">
-                                </tbody>
+                                <!-- Dynamic content for admin users list -->
+                            </tbody>
                         </table>
                     </div>
 
-                    <div class="space-y-4">
-                        <h3 class="text-lg font-semibold text-gray-700">Quick Actions (All Users)</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <button id="admin-add-points" class="bg-green-600 text-white p-3 rounded-lg btn-hover transition duration-200 ease-in-out hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 touch-target">
-                                +5 to All Regular Users
-                            </button>
-                            <button id="admin-reset-points" class="bg-red-600 text-white p-3 rounded-lg btn-hover transition duration-200 ease-in-out hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 touch-target">
-                                Reset All Regular Users Data
-                            </button>
+                    <!-- Manage Tasks Section -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold mb-3 text-gray-700">Manage Tasks</h3>
+                        <form id="add-task-form" class="space-y-3 p-4 bg-gray-50 rounded-lg mb-4">
+                            <h4 class="font-medium text-gray-800">Add New Task</h4>
+                            <div>
+                                <label for="new-task-title" class="block text-sm font-medium mb-1">Task Title</label>
+                                <input type="text" id="new-task-title" class="w-full p-2 border rounded-lg" required>
+                            </div>
+                            <div>
+                                <label for="new-task-description" class="block text-sm font-medium mb-1">Description</label>
+                                <textarea id="new-task-description" class="w-full p-2 border rounded-lg h-20 resize-y"></textarea>
+                            </div>
+                            <div>
+                                <label for="new-task-max-points" class="block text-sm font-medium mb-1">Max Points (e.g., 100)</label>
+                                <input type="number" id="new-task-max-points" class="w-full p-2 border rounded-lg" required min="1">
+                            </div>
+                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium btn-hover touch-target">Add Task</button>
+                        </form>
+
+                        <div id="tasks-list" class="space-y-3">
+                            <p class="text-gray-500">No tasks defined yet.</p>
+                            <!-- Dynamic tasks will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Manage Announcements Section -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold mb-3 text-gray-700">Manage Announcements</h3>
+                        <form id="add-announcement-form" class="space-y-3 p-4 bg-gray-50 rounded-lg mb-4">
+                            <h4 class="font-medium text-gray-800">Add New Announcement</h4>
+                            <div>
+                                <label for="new-announcement-title" class="block text-sm font-medium mb-1">Title</label>
+                                <input type="text" id="new-announcement-title" class="w-full p-2 border rounded-lg" required>
+                            </div>
+                            <div>
+                                <label for="new-announcement-content" class="block text-sm font-medium mb-1">Content</label>
+                                <textarea id="new-announcement-content" class="w-full p-2 border rounded-lg h-20 resize-y" required></textarea>
+                            </div>
+                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium btn-hover touch-target">Add Announcement</button>
+                        </form>
+
+                        <div id="admin-announcements-list" class="space-y-3">
+                            <p class="text-gray-500">No announcements yet.</p>
+                            <!-- Dynamic announcements will be loaded here -->
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Task Screen -->
         <div id="task-screen" class="hidden fade-in">
             <div class="bg-white p-6 rounded-xl shadow-md mb-4">
                 <div class="flex justify-between items-center mb-4 flex-wrap">
@@ -209,20 +337,27 @@
                         </svg>
                         Back to Dashboard
                     </button>
-                    <h2 class="text-xl font-bold text-gray-800 mb-2 sm:mb-0">Python Task</h2>
-                    <div></div> </div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-2 sm:mb-0" id="task-screen-title">Python Task</h2>
+                    <div></div> <!-- Placeholder for spacing -->
+                </div>
 
                 <div class="space-y-6">
                     <div class="bg-blue-50 p-4 rounded-lg">
                         <h3 class="font-semibold text-lg mb-2 text-blue-900">Your Progress</h3>
-                        <div class="flex flex-col sm:flex-row justify-around">
+                        <div class="flex flex-col sm:flex-row justify-around items-center">
                             <div class="text-center mb-4 sm:mb-0">
                                 <p class="text-gray-600">Points</p>
                                 <p class="text-2xl font-bold text-blue-800" id="task-points">0</p>
                             </div>
-                            <div class="text-center">
+                            <div class="text-center sm:ml-4">
                                 <p class="text-gray-600">Completed</p>
                                 <p class="text-2xl font-bold" id="task-completed">No</p>
+                            </div>
+                            <div class="text-center mt-4 sm:mt-0 sm:ml-4 flex-1 max-w-xs">
+                                <p class="text-gray-600 text-sm" id="task-progress-detail-text">Progress: 0% (0 / 0 pts)</p>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" id="task-progress-detail-bar" style="width: 0%;"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -231,7 +366,8 @@
                         <h3 class="font-semibold text-lg mb-4 text-gray-700">Your Documents</h3>
                         <div id="document-container">
                             <div id="document-grid" class="document-grid mb-6">
-                                </div>
+                                <!-- Documents will appear here -->
+                            </div>
                             
                             <input type="file" id="file-input" accept=".pdf">
                             <label for="file-input" class="file-upload-label mb-4 transition duration-200 ease-in-out hover:border-blue-500 hover:bg-blue-50">
@@ -244,7 +380,7 @@
                                 </div>
                             </label>
                             <button id="upload-btn" class="bg-green-600 text-white p-3 rounded-lg w-full font-medium btn-hover transition duration-200 ease-in-out hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 hidden touch-target">
-                                Upload Document (+5pts)
+                                Upload Document (Pending Review)
                             </button>
                         </div>
                     </div>
@@ -253,10 +389,12 @@
         </div>
     </div>
 
+    <!-- Toast Container (for notifications) -->
     <div id="toast-container" class="toast-container"></div>
 
+    <!-- Profile Modal (for current user) -->
     <div id="profile-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center modal-overlay">
-        <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm modal-content relative">
+        <div class="bg-white p-8 rounded-xl shadow-lg modal-content relative">
             <button id="close-profile-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl focus:outline-none touch-target">&times;</button>
             <h3 class="text-2xl font-bold text-center mb-6 text-purple-700">My Profile</h3>
             
@@ -281,8 +419,9 @@
         </div>
     </div>
 
+    <!-- Admin User Detail Modal (for viewing other users by admin) -->
     <div id="admin-user-detail-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center modal-overlay">
-        <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-lg modal-content relative">
+        <div class="bg-white p-8 rounded-xl shadow-lg modal-content relative">
             <button id="close-admin-user-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl focus:outline-none touch-target">&times;</button>
             <h3 class="text-2xl font-bold text-center mb-6 text-purple-700">User Details</h3>
             
@@ -293,27 +432,46 @@
                 <p id="admin-modal-user-email" class="text-gray-600 mb-2"></p>
                 <p id="admin-modal-user-points" class="text-lg font-medium text-blue-700"></p>
                 <div class="text-center mt-4">
-                    <p class="font-semibold text-gray-700">Python Task Progress:</p>
+                    <p class="font-semibold text-gray-700">Current Task Progress:</p>
                     <p id="admin-modal-task-points" class="text-xl font-bold text-blue-800">0 pts</p>
                     <p id="admin-modal-task-completed" class="text-lg"></p>
+                    <div class="progress-bar-container mx-auto max-w-xs">
+                        <div class="progress-bar" id="admin-modal-task-progress-bar" style="width: 0%;"></div>
+                    </div>
+                    <p id="admin-modal-task-progress-text" class="text-sm text-gray-600 mt-1">Progress: 0% (0 / 0 pts)</p>
                 </div>
             </div>
 
             <h4 class="text-lg font-semibold text-gray-700 mb-3">Documents Uploaded:</h4>
             <div id="admin-modal-user-documents-grid" class="document-grid mb-6">
-                </div>
+                <!-- User documents will be loaded here -->
+            </div>
             <p id="admin-modal-no-documents" class="text-gray-500 text-center col-span-full hidden">No documents uploaded by this user.</p>
             
             <button id="admin-modal-close-btn" class="w-full bg-gray-300 text-gray-800 p-3 rounded-lg font-medium btn-hover transition duration-200 ease-in-out hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 touch-target">Close</button>
         </div>
     </div>
 
+    <!-- Confirmation Modal (for delete actions) -->
+    <div id="confirmation-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center modal-overlay">
+        <div class="bg-white p-8 rounded-xl shadow-lg modal-content relative text-center">
+            <h3 class="text-xl font-bold mb-4 text-gray-800" id="confirm-modal-title">Confirm Action</h3>
+            <p class="text-gray-700 mb-6" id="confirm-modal-message">Are you sure you want to proceed?</p>
+            <div class="flex justify-center space-x-4">
+                <button id="confirm-modal-cancel-btn" class="bg-gray-300 text-gray-800 px-5 py-2 rounded-lg font-medium btn-hover hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 touch-target">Cancel</button>
+                <button id="confirm-modal-confirm-btn" class="bg-red-600 text-white px-5 py-2 rounded-lg font-medium btn-hover hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 touch-target">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+
     <script>
         // App State - Centralized data store
         const state = {
-            users: [], // Will be loaded by refreshUsersState()
+            users: [], // Will be loaded by refreshStateFromLocalStorage()
             currentUser: null, // Holds the currently logged-in user object
-            tasks: [{ id: 'python', title: 'Python Programming' }], // Available tasks
+            allTasks: [], // All dynamically created tasks
+            announcements: [], // All dynamically created announcements
             
             // Hardcoded admin credentials for initial setup and access
             adminCredentials: {
@@ -322,7 +480,8 @@
                 name: 'Admin'
             },
             
-            selectedFile: null // For PDF file uploads
+            selectedFile: null, // For PDF file uploads
+            pendingConfirmation: null // For custom confirmation modal callback
         };
 
         // DOM Elements - Cached references to frequently accessed DOM elements
@@ -334,37 +493,63 @@
             nameField: document.getElementById('name-field'),
             toggleAuth: document.getElementById('toggle-auth'),
             authError: document.getElementById('auth-error'),
-            
+            emailInput: document.getElementById('email'), // Direct ref for pre-fill
+            passwordInput: document.getElementById('password'), // Direct ref for pre-fill
+            nameInput: document.getElementById('name'), // Direct ref for clearing
+
             // Main application header and layout
             mainApp: document.getElementById('main-app'),
             logoutBtn: document.getElementById('logout-btn'),
             profileBtn: document.getElementById('profile-btn'),
             profileInitial: document.getElementById('profile-initial'),
-            headerProfilePic: document.getElementById('header-profile-pic'), // New: for header profile image
+            headerProfilePic: document.getElementById('header-profile-pic'), 
             
             // Content sections (user vs. admin)
             userContent: document.getElementById('user-content'),
             adminContent: document.getElementById('admin-content'),
             
+            // User Dashboard elements
+            userAnnouncementsSection: document.getElementById('user-announcements-section'),
+            announcementsList: document.getElementById('announcements-list'),
+            currentTaskTitle: document.getElementById('current-task-title'),
+            currentTaskDescription: document.getElementById('current-task-description'),
+            taskProgressBar: document.getElementById('task-progress-bar'),
+            taskProgressText: document.getElementById('task-progress-text'),
+            leaderboard: document.getElementById('leaderboard'),
+            
             // Task-related elements
             taskScreen: document.getElementById('task-screen'),
             goToTask: document.getElementById('go-to-task'),
             backBtn: document.getElementById('back-btn'),
+            taskScreenTitle: document.getElementById('task-screen-title'),
             taskPoints: document.getElementById('task-points'),
             taskCompleted: document.getElementById('task-completed'),
+            taskProgressDetailText: document.getElementById('task-progress-detail-text'),
+            taskProgressDetailBar: document.getElementById('task-progress-detail-bar'),
             
             // Document upload elements
             documentGrid: document.getElementById('document-grid'),
-            fileInput: document.getElementById('file-input'), // For PDF upload
+            fileInput: document.getElementById('file-input'), 
             uploadBtn: document.getElementById('upload-btn'),
-            
-            // Leaderboard elements
-            leaderboard: document.getElementById('leaderboard'),
             
             // Admin dashboard elements
             adminUsersList: document.getElementById('admin-users-list'),
             adminAddPoints: document.getElementById('admin-add-points'),
             adminResetPoints: document.getElementById('admin-reset-points'),
+            pendingDocumentsList: document.getElementById('pending-documents-list'), // New for admin approvals
+            
+            // Admin Task Management
+            addTaskForm: document.getElementById('add-task-form'),
+            newTaskTitle: document.getElementById('new-task-title'),
+            newTaskDescription: document.getElementById('new-task-description'),
+            newTaskMaxPoints: document.getElementById('new-task-max-points'),
+            tasksList: document.getElementById('tasks-list'),
+
+            // Admin Announcement Management
+            addAnnouncementForm: document.getElementById('add-announcement-form'),
+            newAnnouncementTitle: document.getElementById('new-announcement-title'),
+            newAnnouncementContent: document.getElementById('new-announcement-content'),
+            adminAnnouncementsList: document.getElementById('admin-announcements-list'),
 
             // Toast notification container
             toastContainer: document.getElementById('toast-container'),
@@ -376,11 +561,11 @@
             modalUserName: document.getElementById('modal-user-name'),
             modalUserEmail: document.getElementById('modal-user-email'),
             modalUserPoints: document.getElementById('modal-user-points'),
-            profilePicInputModal: document.getElementById('profile-pic-input-modal'), // For profile pic upload in modal
-            closeProfileModalBtn: document.getElementById('close-profile-modal'), // Close button for modal
-            modalCloseBtn: document.getElementById('modal-close-btn'), // Another close button for modal
+            profilePicInputModal: document.getElementById('profile-pic-input-modal'), 
+            closeProfileModalBtn: document.getElementById('close-profile-modal'), 
+            modalCloseBtn: document.getElementById('modal-close-btn'), 
 
-            // Admin User Detail Modal elements (new)
+            // Admin User Detail Modal elements
             adminUserDetailModal: document.getElementById('admin-user-detail-modal'),
             closeAdminUserModal: document.getElementById('close-admin-user-modal'),
             adminModalProfilePic: document.getElementById('admin-modal-profile-pic'),
@@ -390,35 +575,53 @@
             adminModalUserPoints: document.getElementById('admin-modal-user-points'),
             adminModalTaskPoints: document.getElementById('admin-modal-task-points'),
             adminModalTaskCompleted: document.getElementById('admin-modal-task-completed'),
+            adminModalTaskProgressBar: document.getElementById('admin-modal-task-progress-bar'),
+            adminModalTaskProgressText: document.getElementById('admin-modal-task-progress-text'),
             adminModalUserDocumentsGrid: document.getElementById('admin-modal-user-documents-grid'),
             adminModalNoDocuments: document.getElementById('admin-modal-no-documents'),
-            adminModalCloseBtn: document.getElementById('admin-modal-close-btn')
+            adminModalCloseBtn: document.getElementById('admin-modal-close-btn'),
+
+            // Confirmation Modal elements (new)
+            confirmationModal: document.getElementById('confirmation-modal'),
+            confirmModalTitle: document.getElementById('confirm-modal-title'),
+            confirmModalMessage: document.getElementById('confirm-modal-message'),
+            confirmModalCancelBtn: document.getElementById('confirm-modal-cancel-btn'),
+            confirmModalConfirmBtn: document.getElementById('confirm-modal-confirm-btn')
         };
 
         /* ----- Utility Functions ----- */
 
         /**
-         * Loads users from localStorage into the state.users array.
+         * Loads users, tasks, and announcements from localStorage into the state.
          * This should be called whenever the application needs to ensure its in-memory
-         * user list is synchronized with the persistent storage.
+         * state is synchronized with the persistent storage.
          */
-        function refreshUsersState() {
+        function refreshStateFromLocalStorage() {
             const storedUsers = localStorage.getItem('users');
             state.users = storedUsers ? JSON.parse(storedUsers) : [];
-            console.log('--- refreshUsersState() ---');
-            console.log('localStorage "users":', storedUsers);
+
+            const storedTasks = localStorage.getItem('allTasks');
+            state.allTasks = storedTasks ? JSON.parse(storedTasks) : [];
+            
+            const storedAnnouncements = localStorage.getItem('announcements');
+            state.announcements = storedAnnouncements ? JSON.parse(storedAnnouncements) : [];
+
+            console.log('--- refreshStateFromLocalStorage() ---');
             console.log('state.users (after refresh):', state.users.map(u => ({id: u.id, email: u.email, isAdmin: u.isAdmin})));
+            console.log('state.allTasks (after refresh):', state.allTasks.map(t => t.title));
+            console.log('state.announcements (after refresh):', state.announcements.map(a => a.title));
         }
 
         /**
-         * Saves the current state of users array to localStorage.
-         * This should be called after any modification to the state.users array.
+         * Saves the current state of users, tasks, and announcements to localStorage.
+         * This should be called after any modification to these arrays in the state.
          */
-        function saveUsersToLocalStorage() {
+        function saveStateToLocalStorage() {
             localStorage.setItem('users', JSON.stringify(state.users));
-            console.log('--- saveUsersToLocalStorage() ---');
-            console.log('state.users saved to localStorage.');
-            console.log('Current localStorage "users":', localStorage.getItem('users'));
+            localStorage.setItem('allTasks', JSON.stringify(state.allTasks));
+            localStorage.setItem('announcements', JSON.stringify(state.announcements));
+            console.log('--- saveStateToLocalStorage() ---');
+            console.log('All state data saved to localStorage.');
         }
 
         /**
@@ -455,38 +658,108 @@
             }, 3000);
         }
 
+        /**
+         * Shows a generic confirmation modal.
+         * @param {string} title - The title of the confirmation.
+         * @param {string} message - The confirmation message.
+         * @param {function} onConfirm - Callback function if user confirms.
+         */
+        function showConfirmationModal(title, message, onConfirm) {
+            elements.confirmModalTitle.textContent = title;
+            elements.confirmModalMessage.textContent = message;
+            elements.confirmationModal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+
+            state.pendingConfirmation = onConfirm; // Store the callback
+
+            // Event listeners for confirmation modal buttons (managed to prevent multiple attachments)
+            elements.confirmModalConfirmBtn.onclick = () => {
+                if (state.pendingConfirmation) {
+                    state.pendingConfirmation();
+                }
+                hideConfirmationModal();
+            };
+
+            elements.confirmModalCancelBtn.onclick = () => {
+                hideConfirmationModal();
+            };
+        }
+
+        /**
+         * Hides the generic confirmation modal.
+         */
+        function hideConfirmationModal() {
+            elements.confirmationModal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+            state.pendingConfirmation = null; // Clear the callback
+        }
+
+
         /* ----- Initialization ----- */
 
         /**
-         * Initializes the application state, including creating an admin user if not present.
+         * Initializes the application state, including creating an admin user and default tasks/announcements if not present.
          * Attempts to restore a user session from localStorage.
          */
         function initializeApp() {
             console.log('--- initializeApp() called. Starting application initialization flow ---');
-            refreshUsersState(); // Ensure state.users is up-to-date from localStorage immediately
+            refreshStateFromLocalStorage(); // Ensure all state (users, tasks, announcements) is loaded
 
-            // Check if admin user exists; if not, create a default admin
+            // Ensure Admin user exists
             const adminExists = state.users.some(user => 
                 user.email === state.adminCredentials.email && user.isAdmin
             );
             
             if (!adminExists) {
-                console.log('Admin user not found in localStorage, creating default admin.');
+                console.log('Admin user not found, creating default admin.');
                 const adminUser = {
                     id: 'admin-' + Date.now(),
                     ...state.adminCredentials,
                     isAdmin: true,
                     points: 0,
-                    tasks: [{...state.tasks[0], completed: false, points: 0}],
+                    tasks: [], // Admin initially has no specific tasks
                     documents: [],
-                    profilePicture: '' // Default empty profile picture for admin
+                    profilePicture: ''
                 };
                 state.users.push(adminUser);
-                saveUsersToLocalStorage(); // Persist the new admin user immediately
-                refreshUsersState(); // Re-sync state.users after adding admin
+                saveStateToLocalStorage(); // Save immediately after creating admin
+                refreshStateFromLocalStorage(); // Re-sync state after changes
                 console.log('Admin user created and saved.');
             } else {
                 console.log('Admin user found in localStorage.');
+            }
+
+            // Ensure a default task exists if none are defined
+            // Modified default task to have maxPoints: 100
+            if (state.allTasks.length === 0) {
+                console.log('No tasks found, creating a default "Python Programming" task with maxPoints: 100.');
+                const defaultTask = {
+                    id: 'task-' + Date.now(),
+                    title: 'Python Programming Basics',
+                    description: 'Complete the core Python exercises and submit your notes.',
+                    maxPoints: 100, // Default max points for the main task
+                    isActive: true // Set as the default active task
+                };
+                state.allTasks.push(defaultTask);
+                saveStateToLocalStorage();
+                refreshStateFromLocalStorage();
+                console.log('Default task created and saved.');
+            }
+
+            // Ensure a welcome announcement exists if none are defined
+            if (state.announcements.length === 0) {
+                console.log('No announcements found, creating a default welcome announcement.');
+                const defaultAnnouncement = {
+                    id: 'announcement-' + Date.now(),
+                    title: 'Welcome to Task Monitor Pro!',
+                    content: 'Start your first task and climb the leaderboard!',
+                    date: new Date().toISOString(),
+                    isVisible: true
+                };
+                state.announcements.push(defaultAnnouncement);
+                saveStateToLocalStorage();
+                refreshStateFromLocalStorage();
+                console.log('Default announcement created and saved.');
             }
             
             // Attempt to restore the previous user session
@@ -519,9 +792,9 @@
             e.preventDefault(); // Prevent default form submission and page reload
             clearAuthError(); // Clear previous errors
             
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value.trim();
-            const name = document.getElementById('name').value.trim(); // Trim whitespace from name
+            const email = elements.emailInput.value.trim();
+            const password = elements.passwordInput.value.trim();
+            const name = elements.nameInput.value.trim();
 
             const isSignup = elements.authTitle.textContent === 'Sign Up';
             
@@ -553,7 +826,7 @@
                 throw new Error('Email and password are required.');
             }
             
-            refreshUsersState(); // Ensure state.users is freshest before checking for existing email
+            refreshStateFromLocalStorage(); // Ensure state.users is freshest before checking for existing email
 
             // Check if email already exists
             const emailExists = state.users.some(user => user.email === email);
@@ -566,28 +839,36 @@
                 throw new Error('Password must be at least 6 characters long.');
             }
 
-            // Create new user object
+            // Get the currently active task to assign to new user
+            const activeTask = state.allTasks.find(task => task.isActive);
+            const userTaskAssignment = activeTask ? { 
+                id: activeTask.id, 
+                title: activeTask.title, 
+                completed: false, 
+                points: 0,
+                maxPoints: activeTask.maxPoints // Assign maxPoints from the global task
+            } : null;
+
             const newUser = {
-                id: 'user-' + Date.now(), // Unique ID for the user
+                id: 'user-' + Date.now(), 
                 email,
                 password, // In a real app, hash this password!
                 name,
-                isAdmin: false, // Regular user
+                isAdmin: false, 
                 points: 0,
-                // Assign a copy of the default task for the new user
-                tasks: [{...state.tasks[0], completed: false, points: 0}],
+                tasks: userTaskAssignment ? [userTaskAssignment] : [], // Assign active task
                 documents: [],
-                profilePicture: '' // Initialize with no profile picture
+                profilePicture: '' 
             };
             
-            state.users.push(newUser); // Add new user to the state
-            saveUsersToLocalStorage(); // Save updated users array immediately
+            state.users.push(newUser); 
+            saveStateToLocalStorage(); 
             
-            state.currentUser = newUser; // Set as current user
-            localStorage.setItem('currentUserEmail', newUser.email); // Store email for session persistence
+            state.currentUser = newUser; 
+            localStorage.setItem('currentUserEmail', newUser.email); 
             console.log('User signed up and session set for:', newUser.email);
             showToast('Account created successfully!', 'green');
-            renderMainApp(); // Transition to the main application view
+            renderMainApp(); 
         }
 
         /**
@@ -597,7 +878,7 @@
          */
         function handleLogin(email, password) {
             console.log('--- handleLogin() called for email:', email);
-            refreshUsersState(); // Ensure state.users is freshest before finding user
+            refreshStateFromLocalStorage(); // Ensure state.users is freshest before finding user
 
             if (!email || !password) {
                 throw new Error('Email and password are required.');
@@ -608,27 +889,26 @@
                 let adminUser = state.users.find(u => u.email === email && u.isAdmin);
                 
                 if (!adminUser) {
-                    console.warn('Admin user not found in state.users during admin login attempt, creating a new admin object.');
-                    adminUser = {
+                    console.warn('Admin user not found in state.users during admin login attempt, this should not happen after initializeApp. Attempting to create/update.');
+                    // This block ensures the admin user is correctly represented in state.users
+                    // in case it was missing or corrupted.
+                    const newAdminUser = {
                         id: 'admin-' + Date.now(),
                         ...state.adminCredentials,
                         isAdmin: true,
                         points: 0,
-                        tasks: [{...state.tasks[0], completed: false, points: 0}],
+                        tasks: [], 
                         documents: [],
                         profilePicture: ''
                     };
-                    state.users.push(adminUser);
-                    saveUsersToLocalStorage();
-                    refreshUsersState(); // Re-sync after adding
+                    state.users.push(newAdminUser);
+                    saveStateToLocalStorage();
+                    adminUser = newAdminUser; 
                 } else {
-                    // Update admin data in case some properties like 'isAdmin' were altered in localStorage
-                    // This ensures the current admin object is fully up-to-date with credentials
+                    // Just update properties in case the localStorage version is outdated
                     Object.assign(adminUser, state.adminCredentials, { isAdmin: true });
-                    // Find and replace the admin in the users array to ensure consistency
                     state.users = state.users.map(u => u.id === adminUser.id ? adminUser : u);
-                    saveUsersToLocalStorage();
-                    // No need to refreshUsersState here as we just directly modified and saved state.users
+                    saveStateToLocalStorage();
                 }
 
                 state.currentUser = adminUser;
@@ -636,42 +916,49 @@
                 console.log('Admin logged in and session set:', adminUser.email);
                 showToast('Welcome, Admin!', 'purple');
                 renderMainApp();
-                return; // Exit after successful admin login
+                return; 
             }
             
             // If not admin, try to find a regular user
-            const user = state.users.find(u => u.email === email && u.password === password && !u.isAdmin); // Ensure it's not an admin
+            const user = state.users.find(u => u.email === email && u.password === password && !u.isAdmin); 
             
             console.log('Attempting to find regular user with email:', email);
             console.log('Found user:', user ? user.email : 'None');
 
             if (!user) {
                 console.log('Invalid login attempt for:', email, '(User not found or password mismatch)');
-                throw new Error('Invalid email or password.'); // Authentication failed
+                throw new Error('Invalid email or password.'); 
             }
             
-            state.currentUser = user; // Set as current user
+            state.currentUser = user; 
             localStorage.setItem('currentUserEmail', user.email);
             console.log('User logged in and session set for:', user.email);
             showToast(`Welcome back, ${user.name}!`, 'green');
-            renderMainApp(); // Transition to main app for regular user
+            renderMainApp(); 
         }
 
         /**
          * Toggles the authentication form between Login and Sign Up modes.
+         * Pre-fills email/password if switching from a failed login attempt.
+         * @param {Event} e - The click event object.
          */
-        function toggleAuthMode() {
+        function toggleAuthMode(e) {
             console.log('--- toggleAuthMode() called ---');
-            const isLogin = elements.authTitle.textContent === 'Login';
+            const isLoginMode = elements.authTitle.textContent === 'Login';
             
-            elements.authTitle.textContent = isLogin ? 'Sign Up' : 'Login';
-            elements.toggleAuth.textContent = isLogin ? 'Have an account? Login' : 'Create new account';
-            elements.nameField.classList.toggle('hidden', !isLogin); // Show name field only for Sign Up
-            
-            // Clear all form fields
-            document.getElementById('email').value = '';
-            document.getElementById('password').value = '';
-            document.getElementById('name').value = '';
+            if (isLoginMode) { // Currently in Login mode, switching to Sign Up
+                elements.authTitle.textContent = 'Sign Up';
+                elements.toggleAuth.textContent = 'Have an account? Login';
+                elements.nameField.classList.remove('hidden'); // Show name field
+            } else { // Currently in Sign Up mode, switching to Login
+                elements.authTitle.textContent = 'Login';
+                elements.toggleAuth.textContent = 'Create new account';
+                elements.nameField.classList.add('hidden'); // Hide name field
+                // Clear fields only when explicitly switching BACK to login to ensure clean slate
+                elements.emailInput.value = ''; 
+                elements.passwordInput.value = '';
+                elements.nameInput.value = '';
+            }
             clearAuthError(); // Clear any existing errors when switching modes
             console.log('Auth mode toggled to:', elements.authTitle.textContent);
         }
@@ -681,512 +968,107 @@
          */
         function logout() {
             console.log('--- logout() called ---');
-            state.currentUser = null; // Clear current user from state
-            localStorage.removeItem('currentUserEmail'); // Remove session from localStorage
+            state.currentUser = null; 
+            localStorage.removeItem('currentUserEmail'); 
             showToast('Logged out successfully!', 'blue');
-            renderAuthScreen(); // Show the login/sign up screen
+            renderAuthScreen(); 
             console.log('User logged out. Session cleared.');
         }
 
-        /* ----- Document & File Functions ----- */
+        /* ----- Task Management Functions (Admin) ----- */
 
         /**
-         * Sets up event listeners for file input and upload button.
+         * Adds a new task.
+         * @param {string} title
+         * @param {string} description
+         * @param {number} maxPoints
          */
-        function setupFileUpload() {
-            // Listen for file selection
-            elements.fileInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (!file) {
-                    elements.uploadBtn.classList.add('hidden'); // Hide if no file selected
-                    state.selectedFile = null;
-                    return;
-                }
-                
-                // Validate file type
-                if (file.type !== 'application/pdf') {
-                    showToast('Please upload a PDF file only.', 'red');
-                    elements.uploadBtn.classList.add('hidden');
-                    state.selectedFile = null;
-                    return;
-                }
-                
-                state.selectedFile = file; // Store the selected file
-                elements.uploadBtn.classList.remove('hidden'); // Show upload button
-                elements.uploadBtn.textContent = `Upload "${file.name}" (+5pts)`;
-            });
-            
-            // Listen for upload button click
-            elements.uploadBtn.addEventListener('click', uploadDocument);
-        }
-
-        /**
-         * Handles the document upload process (simulated).
-         */
-        function uploadDocument() {
-            if (!state.selectedFile || !state.currentUser) return; // Ensure file and user exist
-            
-            const now = new Date();
-            const day = now.getDate().toString().padStart(2, '0');
-            const month = (now.getMonth() + 1).toString().padStart(2, '0');
-            const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][now.getDay()];
-            // Generate a descriptive name for the document
-            const docName = `Day ${state.currentUser.documents.length + 1} (${dayName} ${day}.${month})`;
-            
-            // In a real application, you would send state.selectedFile to a server here.
-            // For this client-side demo, we just store metadata.
-            
-            const newDoc = {
-                id: 'doc-' + Date.now(), // Unique ID for the document
-                name: docName,
-                filename: state.selectedFile.name,
-                size: state.selectedFile.size,
-                uploadedAt: now.toISOString(),
-                day: state.currentUser.documents.length + 1
+        function addTask(title, description, maxPoints) {
+            if (maxPoints <= 0) {
+                showToast('Max Points must be greater than 0.', 'red');
+                return;
+            }
+            const newTask = {
+                id: 'task-' + Date.now(),
+                title,
+                description,
+                maxPoints: parseInt(maxPoints),
+                isActive: false // New tasks are not active by default
             };
-            
-            state.currentUser.documents.push(newDoc); // Add document to current user's list
-            
-            // Award points
-            state.currentUser.points += 5;
-            const task = state.currentUser.tasks.find(t => t.id === 'python');
-            if (task) {
-                task.points += 5; // Also add points to the specific task
-                // Check if task is completed (example logic)
-                if (task.points >= 20 && !task.completed) {
-                    task.completed = true;
-                    showToast('Python Task Completed!', 'green');
+            state.allTasks.push(newTask);
+            saveStateToLocalStorage();
+            showToast('Task added!', 'green');
+            renderAdminDashboard();
+        }
+
+        /**
+         * Sets a task as active (for new user assignments).
+         * @param {string} taskId
+         */
+        function setActiveTask(taskId) {
+            showConfirmationModal(
+                'Set Active Task',
+                'Are you sure you want to set this task as active? This will be assigned to new users.',
+                () => {
+                    state.allTasks.forEach(task => {
+                        task.isActive = (task.id === taskId);
+                    });
+                    saveStateToLocalStorage();
+                    showToast('Active task updated!', 'blue');
+                    renderAdminDashboard();
                 }
-            }
-            
-            saveUsersToLocalStorage(); // Save updated user data
-            showToast('Document uploaded and points awarded!', 'green');
-            elements.fileInput.value = ''; // Clear file input field
-            elements.uploadBtn.classList.add('hidden'); // Hide upload button
-            state.selectedFile = null; // Clear selected file in state
-            renderTaskScreen(); // Re-render task screen to reflect changes
+            );
         }
 
         /**
-         * Renders the list of uploaded documents for a given user.
-         * This function is now generalized to be used by both user's own documents and admin's view.
-         * @param {HTMLElement} targetGrid - The HTML element (e.g., a div) where documents should be rendered.
-         * @param {Array} documents - The array of document objects to display.
-         * @param {HTMLElement} noDocumentsMessageElement - Optional: Element to show if no documents.
+         * Deletes a task.
+         * @param {string} taskId
          */
-        function renderDocumentsForUser(targetGrid, documents, noDocumentsMessageElement = null) {
-            targetGrid.innerHTML = ''; // Clear existing documents
-            if (documents && documents.length > 0) {
-                if (noDocumentsMessageElement) noDocumentsMessageElement.classList.add('hidden');
-                documents.forEach(doc => {
-                    const docCard = document.createElement('div');
-                    docCard.className = 'document-card cursor-pointer';
-                    docCard.innerHTML = `
-                        <div class="pdf-icon">📄</div>
-                        <p class="text-sm font-medium text-gray-800">${doc.name}</p>
-                        <p class="text-xs text-gray-500">${(doc.size / 1024).toFixed(1)} KB</p>
-                    `;
-                    docCard.addEventListener('click', () => {
-                        showToast(`Simulating view/download for: ${doc.filename}`, 'blue');
+        function deleteTask(taskId) {
+            showConfirmationModal(
+                'Delete Task',
+                'Are you sure you want to delete this task? This cannot be undone and will affect assigned users.',
+                () => {
+                    state.allTasks = state.allTasks.filter(task => task.id !== taskId);
+                    // Also remove this task from any user's active tasks if it was assigned
+                    state.users.forEach(user => {
+                        user.tasks = user.tasks.filter(t => t.id !== taskId);
                     });
-                    targetGrid.appendChild(docCard);
-                });
-            } else {
-                if (noDocumentsMessageElement) {
-                    noDocumentsMessageElement.classList.remove('hidden');
-                    targetGrid.innerHTML = ''; // Ensure no other message is there
-                } else {
-                    targetGrid.innerHTML = '<p class="text-gray-500 text-center col-span-full">No documents uploaded yet.</p>';
+                    saveStateToLocalStorage();
+                    showToast('Task deleted!', 'red');
+                    renderAdminDashboard();
                 }
-            }
+            );
         }
 
-        // Original renderDocuments is now a wrapper for renderDocumentsForUser specific to current user's task screen
-        function renderDocuments() {
-            renderDocumentsForUser(elements.documentGrid, state.currentUser.documents);
-        }
-
-        /* ----- Profile Modal Functions (for current user) ----- */
+        /* ----- Announcement Management Functions (Admin) ----- */
 
         /**
-         * Displays the user profile modal with current user's details.
+         * Adds a new announcement.
+         * @param {string} title
+         * @param {string} content
          */
-        function showProfileModal() {
-            if (!state.currentUser) {
-                showToast('Please log in to view your profile.', 'red');
-                return;
-            }
-            document.body.classList.add('overflow-hidden'); // Prevent background scrolling
-            elements.profileModal.classList.remove('hidden'); // Show the modal overlay
-
-            // Populate modal with current user data
-            if (state.currentUser.profilePicture) {
-                elements.modalProfilePic.src = state.currentUser.profilePicture;
-                elements.modalProfilePic.classList.remove('hidden');
-                elements.modalProfileInitial.classList.add('hidden'); // Hide initial if image exists
-            } else {
-                elements.modalProfilePic.src = '';
-                elements.modalProfilePic.classList.add('hidden');
-                elements.modalProfileInitial.classList.remove('hidden'); // Show initial if no image
-                elements.modalProfileInitial.textContent = state.currentUser.name ? state.currentUser.name.charAt(0).toUpperCase() : 'U';
-            }
-            
-            elements.modalUserName.textContent = `Name: ${state.currentUser.name}`;
-            elements.modalUserEmail.textContent = `Email: ${state.currentUser.email}`;
-            elements.modalUserPoints.textContent = `Total Points: ${state.currentUser.points}`;
+        function addAnnouncement(title, content) {
+            const newAnnouncement = {
+                id: 'announcement-' + Date.now(),
+                title,
+                content,
+                date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                isVisible: true // All new announcements are visible by default
+            };
+            state.announcements.unshift(newAnnouncement); // Add to the beginning
+            saveStateToLocalStorage();
+            showToast('Announcement added!', 'green');
+            renderAdminDashboard();
         }
 
         /**
-         * Hides the user profile modal.
+         * Deletes an announcement.
+         * @param {string} announcementId
          */
-        function hideProfileModal() {
-            document.body.classList.remove('overflow-hidden'); // Re-enable background scrolling
-            elements.profileModal.classList.add('hidden'); // Hide the modal overlay
-        }
-
-        /**
-         * Handles the upload of a new profile picture from the modal.
-         * @param {Event} e - The change event from the file input.
-         */
-        function handleProfilePicUpload(e) {
-            const file = e.target.files[0];
-            if (file) {
-                // Check if file is an image
-                if (!file.type.startsWith('image/')) {
-                    showToast('Please upload an image file (PNG, JPG, GIF, etc.).', 'red');
-                    e.target.value = ''; // Clear the file input
-                    return;
-                }
-
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    if (state.currentUser) {
-                        state.currentUser.profilePicture = event.target.result; // Store base64 string
-                        saveUsersToLocalStorage();
-                        showToast('Profile picture updated!', 'green');
-                        renderMainApp(); // Update header profile pic
-                        showProfileModal(); // Re-open modal to show new pic
-                    }
-                };
-                reader.readAsDataURL(file); // Read file as base64
-            }
-        }
-
-        /* ----- Admin User Detail Modal Functions (new) ----- */
-
-        /**
-         * Displays the admin user details modal for a specific user.
-         * @param {string} userId - The ID of the user to display.
-         */
-        function showAdminUserDetailsModal(userId) {
-            const userToView = state.users.find(user => user.id === userId);
-            if (!userToView) {
-                showToast('User not found!', 'red');
-                return;
-            }
-
-            document.body.classList.add('overflow-hidden'); // Prevent background scrolling
-            elements.adminUserDetailModal.classList.remove('hidden');
-
-            // Populate modal with selected user's data
-            if (userToView.profilePicture) {
-                elements.adminModalProfilePic.src = userToView.profilePicture;
-                elements.adminModalProfilePic.classList.remove('hidden');
-                elements.adminModalProfileInitial.classList.add('hidden');
-            } else {
-                elements.adminModalProfilePic.src = '';
-                elements.adminModalProfilePic.classList.add('hidden');
-                elements.adminModalProfileInitial.classList.remove('hidden');
-                elements.adminModalProfileInitial.textContent = userToView.name ? userToView.name.charAt(0).toUpperCase() : 'U';
-            }
-            
-            elements.adminModalUserName.textContent = `Name: ${userToView.name}`;
-            elements.adminModalUserEmail.textContent = `Email: ${userToView.email}`;
-            elements.adminModalUserPoints.textContent = `Total Points: ${userToView.points}`;
-
-            const userTask = userToView.tasks.find(t => t.id === 'python');
-            if (userTask) {
-                elements.adminModalTaskPoints.textContent = `${userTask.points} pts`;
-                elements.adminModalTaskCompleted.textContent = userTask.completed ? 'Completed' : 'Not Completed';
-                elements.adminModalTaskCompleted.className = userTask.completed ? 'text-lg text-green-600' : 'text-lg text-red-500';
-            } else {
-                 elements.adminModalTaskPoints.textContent = 'N/A';
-                 elements.adminModalTaskCompleted.textContent = 'No task assigned';
-                 elements.adminModalTaskCompleted.className = 'text-lg text-gray-500';
-            }
-
-            renderDocumentsForUser(elements.adminModalUserDocumentsGrid, userToView.documents, elements.adminModalNoDocuments);
-        }
-
-        /**
-         * Hides the admin user details modal.
-         */
-        function hideAdminUserDetailsModal() {
-            document.body.classList.remove('overflow-hidden'); // Re-enable background scrolling
-            elements.adminUserDetailModal.classList.add('hidden');
-        }
-
-        /* ----- Render Functions (UI Updates) ----- */
-
-        /**
-         * Renders the authentication screen and hides other app sections.
-         */
-        function renderAuthScreen() {
-            console.log('--- renderAuthScreen() ---');
-            elements.authScreen.classList.remove('hidden');
-            elements.mainApp.classList.add('hidden');
-            elements.taskScreen.classList.add('hidden');
-            elements.profileModal.classList.add('hidden'); // Ensure personal profile modal is hidden
-            elements.adminUserDetailModal.classList.add('hidden'); // Ensure admin user detail modal is hidden
-            document.body.classList.remove('overflow-hidden'); // Ensure body scroll is re-enabled
-
-            elements.authForm.reset(); // Clear form fields
-            clearAuthError(); // Clear auth error messages
-            elements.authTitle.textContent = 'Login';
-            elements.toggleAuth.textContent = 'Create new account';
-            elements.nameField.classList.add('hidden'); // Hide name field for login by default
-            // Clear header profile pic display on logout
-            elements.headerProfilePic.classList.add('hidden');
-            elements.headerProfilePic.src = '';
-            elements.profileInitial.classList.remove('hidden');
-            elements.profileInitial.textContent = 'U'; // Reset to default initial
-        }
-
-        /**
-         * Renders the main application dashboard, showing either user or admin content.
-         */
-        function renderMainApp() {
-            console.log('--- renderMainApp() ---');
-            if (!state.currentUser) {
-                renderAuthScreen(); // Redirect to auth if no current user
-                return;
-            }
-
-            // Hide all other main screens
-            elements.authScreen.classList.add('hidden');
-            elements.taskScreen.classList.add('hidden');
-            elements.profileModal.classList.add('hidden'); // Ensure personal profile modal is hidden
-            elements.adminUserDetailModal.classList.add('hidden'); // Ensure admin user detail modal is hidden
-            elements.mainApp.classList.remove('hidden'); // Show main app
-            document.body.classList.remove('overflow-hidden'); // Ensure body scroll is re-enabled
-
-            // Update profile button in header based on current user's profile picture
-            if (state.currentUser.profilePicture) {
-                elements.headerProfilePic.src = state.currentUser.profilePicture;
-                elements.headerProfilePic.classList.remove('hidden');
-                elements.profileInitial.classList.add('hidden');
-            } else {
-                elements.headerProfilePic.src = '';
-                elements.headerProfilePic.classList.add('hidden');
-                elements.profileInitial.classList.remove('hidden');
-                elements.profileInitial.textContent = state.currentUser.name ? state.currentUser.name.charAt(0).toUpperCase() : 'U';
-            }
-
-            // Render specific content based on user role
-            if (state.currentUser.isAdmin) {
-                elements.adminContent.classList.remove('hidden');
-                elements.userContent.classList.add('hidden');
-                renderAdminDashboard();
-            } else {
-                elements.adminContent.classList.add('hidden');
-                elements.userContent.classList.remove('hidden');
-                renderUserDashboard();
-            }
-        }
-
-        /**
-         * Renders the user-specific dashboard content, including the leaderboard.
-         */
-        function renderUserDashboard() {
-            elements.leaderboard.innerHTML = ''; // Clear existing leaderboard
-            // Filter and sort users for the leaderboard (excluding admin)
-            const sortedUsers = [...state.users]
-                .filter(u => !u.isAdmin)
-                .sort((a, b) => b.points - a.points); // Sort by points descending
-            
-            if (sortedUsers.length > 0) {
-                sortedUsers.forEach((user, index) => {
-                    const li = document.createElement('li');
-                    // Highlight current user in leaderboard
-                    li.className = `flex justify-between items-center py-2 ${user.id === state.currentUser.id ? 'font-bold text-blue-700' : 'text-gray-800'}`;
-                    li.innerHTML = `
-                        <span>${index + 1}. ${user.name}</span>
-                        <span>${user.points} points</span>
-                    `;
-                    elements.leaderboard.appendChild(li);
-                });
-            } else {
-                elements.leaderboard.innerHTML = '<li class="text-gray-500 text-center py-2">No users on leaderboard yet.</li>';
-            }
-        }
-
-        /**
-         * Renders the admin dashboard, showing all non-admin users and their data.
-         */
-        function renderAdminDashboard() {
-            elements.adminUsersList.innerHTML = ''; // Clear existing list
-            const nonAdminUsers = state.users.filter(user => !user.isAdmin);
-
-            if (nonAdminUsers.length > 0) {
-                nonAdminUsers.forEach(user => {
-                    const row = document.createElement('tr');
-                    row.className = 'border-b border-gray-200 hover:bg-gray-50 transition-colors';
-                    row.innerHTML = `
-                        <td class="p-3 text-gray-700 font-medium">${user.name} (${user.email})</td>
-                        <td class="p-3 text-gray-600">${user.documents.length}</td>
-                        <td class="p-3 text-blue-600 font-semibold">${user.points}</td>
-                        <td class="p-3">
-                            <button data-user-id="${user.id}" class="admin-add-user-points bg-green-500 text-white px-3 py-1 rounded text-sm mr-2 btn-hover hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 touch-target">Add 5</button>
-                            <button data-user-id="${user.id}" class="admin-reset-user-points bg-red-500 text-white px-3 py-1 rounded text-sm mr-2 btn-hover hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 touch-target">Reset</button>
-                            <button data-user-id="${user.id}" class="admin-view-user-details bg-blue-500 text-white px-3 py-1 rounded text-sm btn-hover hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 touch-target">View Details</button>
-                        </td>
-                    `;
-                    elements.adminUsersList.appendChild(row);
-                });
-
-                // Attach event listeners to dynamically created buttons for individual user actions
-                document.querySelectorAll('.admin-add-user-points').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        const userId = e.target.dataset.userId;
-                        const user = state.users.find(u => u.id === userId);
-                        if (user) {
-                            user.points += 5;
-                            const task = user.tasks.find(t => t.id === 'python');
-                            if (task) task.points += 5;
-                            saveUsersToLocalStorage();
-                            showToast(`Added 5 points to ${user.name}`, 'green');
-                            renderAdminDashboard(); // Re-render to update points
-                        }
-                    });
-                });
-
-                document.querySelectorAll('.admin-reset-user-points').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        const userId = e.target.dataset.userId;
-                        const user = state.users.find(u => u.id === userId);
-                        if (user) {
-                            // Replaced confirm() with direct action, assuming the user understands its impact from button label
-                            user.points = 0;
-                            user.documents = []; 
-                            user.tasks.forEach(task => { // Reset task progress
-                                task.completed = false;
-                                task.points = 0;
-                            });
-                            saveUsersToLocalStorage();
-                            showToast(`Reset all data for ${user.name}`, 'red');
-                            renderAdminDashboard(); // Re-render to update points
-                        }
-                    });
-                });
-
-                // New: Attach event listeners for "View Details" buttons
-                document.querySelectorAll('.admin-view-user-details').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        const userId = e.target.dataset.userId;
-                        showAdminUserDetailsModal(userId);
-                    });
-                });
-
-            } else {
-                elements.adminUsersList.innerHTML = '<tr><td colspan="4" class="p-3 text-center text-gray-500">No regular users registered.</td></tr>';
-            }
-        }
-
-        /**
-         * Renders the specific task screen, showing user's progress and documents.
-         */
-        function renderTaskScreen() {
-            if (!state.currentUser) {
-                renderAuthScreen();
-                return;
-            }
-            // Hide other main screens
-            elements.authScreen.classList.add('hidden');
-            elements.mainApp.classList.add('hidden');
-            elements.profileModal.classList.add('hidden'); // Ensure personal profile modal is hidden
-            elements.adminUserDetailModal.classList.add('hidden'); // Ensure admin user detail modal is hidden
-            elements.taskScreen.classList.remove('hidden'); // Show task screen
-            document.body.classList.remove('overflow-hidden'); // Ensure body scroll is re-enabled
-
-            const pythonTask = state.currentUser.tasks.find(t => t.id === 'python');
-            if (pythonTask) {
-                elements.taskPoints.textContent = pythonTask.points;
-                elements.taskCompleted.textContent = pythonTask.completed ? 'Yes' : 'No';
-                // Apply color based on task completion status
-                elements.taskCompleted.className = pythonTask.completed ? 'text-2xl font-bold text-green-600' : 'text-2xl font-bold text-red-500';
-            }
-
-            renderDocuments(); // Render current user's uploaded documents
-        }
-
-        /* ----- Event Listeners Setup ----- */
-
-        /**
-         * Sets up all global event listeners for the application.
-         */
-        function setupEventListeners() {
-            // Auth Screen Listeners
-            elements.authForm.addEventListener('submit', handleAuthSubmit);
-            elements.toggleAuth.addEventListener('click', toggleAuthMode);
-
-            // Main App Header Listeners
-            elements.logoutBtn.addEventListener('click', logout);
-            elements.profileBtn.addEventListener('click', showProfileModal); // Open personal profile modal on click
-
-            // Profile Modal Listeners (for current user)
-            elements.closeProfileModalBtn.addEventListener('click', hideProfileModal); // Close button (X)
-            elements.modalCloseBtn.addEventListener('click', hideProfileModal); // Close button ("Close")
-            elements.profilePicInputModal.addEventListener('change', handleProfilePicUpload); // Handle profile pic upload
-
-            // Admin User Detail Modal Listeners (new)
-            elements.closeAdminUserModal.addEventListener('click', hideAdminUserDetailsModal);
-            elements.adminModalCloseBtn.addEventListener('click', hideAdminUserDetailsModal);
-
-            // User Content Listeners
-            elements.goToTask.addEventListener('click', renderTaskScreen);
-
-            // Task Screen Listeners
-            elements.backBtn.addEventListener('click', renderMainApp);
-            setupFileUpload(); // Setup for PDF file uploads
-
-            // Admin Actions Listeners (for overall actions)
-            elements.adminAddPoints.addEventListener('click', () => {
-                state.users.forEach(user => {
-                    if (!user.isAdmin) {
-                        user.points += 5;
-                        const task = user.tasks.find(t => t.id === 'python');
-                        if (task) task.points += 5; 
-                    }
-                });
-                saveUsersToLocalStorage();
-                showToast('+5 points to all regular users!', 'green');
-                renderAdminDashboard(); // Re-render admin dashboard to show updated points
-            });
-
-            elements.adminResetPoints.addEventListener('click', () => {
-                showToast('Resetting all regular user data...', 'red');
-                state.users.forEach(user => {
-                    if (!user.isAdmin) {
-                        user.points = 0;
-                        user.documents = [];
-                        user.tasks.forEach(task => {
-                            task.completed = false;
-                            task.points = 0;
-                        });
-                    }
-                });
-                saveUsersToLocalStorage();
-                showToast('All regular user data reset!', 'red');
-                renderAdminDashboard(); // Re-render admin dashboard
-            });
-        }
-
-        // Initialize the application and set up all event listeners when the DOM is fully loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeApp();
-            setupEventListeners();
-        });
-
-    </script>
-</body>
-</html>
+        function deleteAnnouncement(announcementId) {
+            showConfirmationModal(
+                'Delete Announcement',
+                'Are you sure you want to delete this announcement?',
+                () => {
+                    state.announcements = state.announcements.filter(ann => ann
