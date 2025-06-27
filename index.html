@@ -346,7 +346,7 @@
                                 </div>
                             </label>
                             <button id="upload-btn" class="bg-green-600 text-white p-3 rounded-lg w-full font-medium btn-hover transition duration-200 ease-in-out hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 hidden touch-target">
-                                Upload Document (+5pts)
+                                Upload Document
                             </button>
                         </div>
                     </div>
@@ -409,8 +409,8 @@
             </div>
 
             <h4 class="text-lg font-semibold text-gray-700 mb-3">Documents Uploaded:</h4>
-            <div id="admin-modal-user-documents-grid" class="document-grid mb-6">
-                <!-- User documents will be loaded here -->
+            <div id="admin-modal-user-documents-list" class="space-y-3 mb-6">
+                <!-- User documents will be loaded here for admin, with verify buttons -->
             </div>
             <p id="admin-modal-no-documents" class="text-gray-500 text-center col-span-full hidden">No documents uploaded by this user.</p>
             
@@ -430,11 +430,37 @@
         </div>
     </div>
 
+    <!-- Edit Task Modal (new) -->
+    <div id="edit-task-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center modal-overlay">
+        <div class="bg-white p-8 rounded-xl shadow-lg modal-content relative">
+            <button id="close-edit-task-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl focus:outline-none touch-target">&times;</button>
+            <h3 class="text-2xl font-bold text-center mb-6 text-purple-700">Edit Task</h3>
+            
+            <form id="edit-task-form" class="space-y-4">
+                <div>
+                    <label for="edit-task-title" class="block text-sm font-medium mb-1">Task Title</label>
+                    <input type="text" id="edit-task-title" class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 touch-target" required>
+                </div>
+                <div>
+                    <label for="edit-task-description" class="block text-sm font-medium mb-1">Description</label>
+                    <textarea id="edit-task-description" class="w-full p-3 border rounded-lg h-20 resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                <div>
+                    <label for="edit-task-max-points" class="block text-sm font-medium mb-1">Max Points</label>
+                    <input type="number" id="edit-task-max-points" class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 touch-target" required min="1">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg font-medium btn-hover transition duration-200 ease-in-out hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 touch-target">
+                    Update Task
+                </button>
+            </form>
+        </div>
+    </div>
+
 
     <script>
         // App State - Centralized data store
         const state = {
-            users: [], // Will be loaded by refreshUsersState()
+            users: [], // Will be loaded by refreshStateFromLocalStorage()
             currentUser: null, // Holds the currently logged-in user object
             allTasks: [], // All dynamically created tasks
             announcements: [], // All dynamically created announcements
@@ -447,7 +473,8 @@
             },
             
             selectedFile: null, // For PDF file uploads
-            pendingConfirmation: null // For custom confirmation modal callback
+            pendingConfirmation: null, // For custom confirmation modal callback
+            editingTaskId: null // Stores the ID of the task currently being edited
         };
 
         // DOM Elements - Cached references to frequently accessed DOM elements
@@ -542,16 +569,24 @@
             adminModalTaskCompleted: document.getElementById('admin-modal-task-completed'),
             adminModalTaskProgressBar: document.getElementById('admin-modal-task-progress-bar'),
             adminModalTaskProgressText: document.getElementById('admin-modal-task-progress-text'),
-            adminModalUserDocumentsGrid: document.getElementById('admin-modal-user-documents-grid'),
+            adminModalUserDocumentsList: document.getElementById('admin-modal-user-documents-list'), // Changed to list for verification
             adminModalNoDocuments: document.getElementById('admin-modal-no-documents'),
             adminModalCloseBtn: document.getElementById('admin-modal-close-btn'),
 
-            // Confirmation Modal elements (new)
+            // Confirmation Modal elements
             confirmationModal: document.getElementById('confirmation-modal'),
             confirmModalTitle: document.getElementById('confirm-modal-title'),
             confirmModalMessage: document.getElementById('confirm-modal-message'),
             confirmModalCancelBtn: document.getElementById('confirm-modal-cancel-btn'),
-            confirmModalConfirmBtn: document.getElementById('confirm-modal-confirm-btn')
+            confirmModalConfirmBtn: document.getElementById('confirm-modal-confirm-btn'),
+
+            // Edit Task Modal elements (new)
+            editTaskModal: document.getElementById('edit-task-modal'),
+            closeEditTaskModal: document.getElementById('close-edit-task-modal'),
+            editTaskForm: document.getElementById('edit-task-form'),
+            editTaskTitle: document.getElementById('edit-task-title'),
+            editTaskDescription: document.getElementById('edit-task-description'),
+            editTaskMaxPoints: document.getElementById('edit-task-max-points')
         };
 
         /* ----- Utility Functions ----- */
@@ -820,7 +855,7 @@
                 isAdmin: false, 
                 points: 0,
                 tasks: userTaskAssignment ? [userTaskAssignment] : [], // Assign active task
-                documents: [],
+                documents: [], // Documents array for the user
                 profilePicture: '' 
             };
             
@@ -853,24 +888,20 @@
                 
                 if (!adminUser) {
                     console.warn('Admin user not found in state.users during admin login attempt, this should not happen after initializeApp. Attempting to create/update.');
-                    // This block ensures the admin user is correctly represented in state.users
-                    // in case it was missing or corrupted.
                     const newAdminUser = {
                         id: 'admin-' + Date.now(),
                         ...state.adminCredentials,
                         isAdmin: true,
                         points: 0,
-                        tasks: [], // Admin typically doesn't have regular tasks
+                        tasks: [], 
                         documents: [],
                         profilePicture: ''
                     };
                     state.users.push(newAdminUser);
                     saveStateToLocalStorage();
-                    adminUser = newAdminUser; // Set adminUser to the newly created one
+                    adminUser = newAdminUser; 
                 } else {
-                    // Just update properties in case the localStorage version is outdated
                     Object.assign(adminUser, state.adminCredentials, { isAdmin: true });
-                    // Find and replace the admin in the users array to ensure consistency
                     state.users = state.users.map(u => u.id === adminUser.id ? adminUser : u);
                     saveStateToLocalStorage();
                 }
@@ -914,17 +945,13 @@
             elements.toggleAuth.textContent = isLogin ? 'Have an account? Login' : 'Create new account';
             elements.nameField.classList.toggle('hidden', !isLogin); // Show name field only for Sign Up
             
-            // Pre-fill email/password if coming from a failed login attempt
-            // This is handled by the values already being in the input fields if they were typed.
-            // We only clear them if switching back to login, or if new signup.
-            if (isLogin) { // Switching from Login to Signup
-                // Fields should retain values if user just failed login, for them to sign up.
-                // No explicit clearing of email/password needed here.
-            } else { // Switching from Signup to Login
-                elements.emailInput.value = ''; // Clear fields for new login attempt
-                elements.passwordInput.value = '';
-                elements.nameInput.value = '';
+            // If switching from Login to Signup, the email/password should retain their values
+            // if they were just typed. Only the name field needs to be potentially cleared/reset
+            // and its visibility toggled.
+            if (!isLogin) { // Switching from Sign Up to Login
+                elements.nameInput.value = ''; // Clear name when going back to login
             }
+            // Email and password inputs retain their values because no explicit clearing here.
             clearAuthError(); // Clear any existing errors when switching modes
             console.log('Auth mode toggled to:', elements.authTitle.textContent);
         }
@@ -955,7 +982,7 @@
                 title,
                 description,
                 maxPoints: parseInt(maxPoints),
-                isActive: false // New tasks are not active by default
+                isActive: false 
             };
             state.allTasks.push(newTask);
             saveStateToLocalStorage();
@@ -997,6 +1024,71 @@
             );
         }
 
+        /**
+         * Displays the edit task modal and populates it with existing task data.
+         * @param {string} taskId - The ID of the task to edit.
+         */
+        function showEditTaskModal(taskId) {
+            const taskToEdit = state.allTasks.find(task => task.id === taskId);
+            if (!taskToEdit) {
+                showToast('Task not found!', 'red');
+                return;
+            }
+            state.editingTaskId = taskId; // Store ID of task being edited
+
+            elements.editTaskTitle.value = taskToEdit.title;
+            elements.editTaskDescription.value = taskToEdit.description;
+            elements.editTaskMaxPoints.value = taskToEdit.maxPoints;
+
+            elements.editTaskModal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        /**
+         * Hides the edit task modal.
+         */
+        function hideEditTaskModal() {
+            elements.editTaskModal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+            state.editingTaskId = null; // Clear the editing ID
+            elements.editTaskForm.reset(); // Clear form fields
+        }
+
+        /**
+         * Handles the submission of the edit task form.
+         * @param {Event} e - The form submit event.
+         */
+        function handleEditTaskSubmit(e) {
+            e.preventDefault();
+            if (!state.editingTaskId) {
+                showToast('No task selected for editing.', 'red');
+                return;
+            }
+
+            const updatedTitle = elements.editTaskTitle.value.trim();
+            const updatedDescription = elements.editTaskDescription.value.trim();
+            const updatedMaxPoints = parseInt(elements.editTaskMaxPoints.value);
+
+            if (!updatedTitle || !updatedMaxPoints || updatedMaxPoints < 1) {
+                showToast('Please fill all task fields correctly.', 'red');
+                return;
+            }
+
+            const taskIndex = state.allTasks.findIndex(task => task.id === state.editingTaskId);
+            if (taskIndex !== -1) {
+                state.allTasks[taskIndex].title = updatedTitle;
+                state.allTasks[taskIndex].description = updatedDescription;
+                state.allTasks[taskIndex].maxPoints = updatedMaxPoints;
+                saveStateToLocalStorage();
+                showToast('Task updated successfully!', 'green');
+                hideEditTaskModal();
+                renderAdminDashboard(); // Re-render to show updated task list
+            } else {
+                showToast('Error: Task not found during update.', 'red');
+            }
+        }
+
+
         /* ----- Announcement Management Functions (Admin) ----- */
 
         /**
@@ -1010,7 +1102,7 @@
                 title,
                 content,
                 date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                isVisible: true // All new announcements are visible by default
+                isVisible: true 
             };
             state.announcements.unshift(newAnnouncement); // Add to the beginning
             saveStateToLocalStorage();
@@ -1047,9 +1139,8 @@
                 'Are you sure you want to permanently delete this user? This action cannot be undone.',
                 () => {
                     state.users = state.users.filter(user => user.id !== userId);
-                    // If the deleted user was the current user (shouldn't happen for admin, but as a safeguard)
                     if (state.currentUser && state.currentUser.id === userId) {
-                        logout();
+                        logout(); // If current user is deleted, log them out
                     } else {
                         saveStateToLocalStorage();
                         showToast('User deleted!', 'red');
@@ -1080,22 +1171,20 @@
                 }
                 state.selectedFile = file; 
                 elements.uploadBtn.classList.remove('hidden');
-                elements.uploadBtn.textContent = `Upload "${file.name}" (+5pts)`;
+                elements.uploadBtn.textContent = `Upload "${file.name}" (Pending points)`; // Indicate points are pending
             });
             elements.uploadBtn.addEventListener('click', uploadDocument);
         }
 
         /**
          * Handles the document upload process (simulated).
+         * Document is uploaded but points are pending admin verification.
          */
         function uploadDocument() {
             if (!state.selectedFile || !state.currentUser) return; 
             
             const now = new Date();
-            const day = now.getDate().toString().padStart(2, '0');
-            const month = (now.getMonth() + 1).toString().padStart(2, '0');
-            const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][now.getDay()];
-            const docName = `Day ${state.currentUser.documents.length + 1} (${dayName} ${day}.${month})`;
+            const docName = `Day ${state.currentUser.documents.length + 1} (${new Date(now).toLocaleDateString()})`;
             
             const newDoc = {
                 id: 'doc-' + Date.now(), 
@@ -1103,69 +1192,132 @@
                 filename: state.selectedFile.name,
                 size: state.selectedFile.size,
                 uploadedAt: now.toISOString(),
-                day: state.currentUser.documents.length + 1
+                isVerified: false // Crucial: Document is not verified initially
             };
             
             state.currentUser.documents.push(newDoc); 
             
-            // Award points for upload
-            state.currentUser.points += 5;
-            const userTask = state.currentUser.tasks[0]; // Assuming one task per user for now
-            if (userTask) {
-                userTask.points += 5; 
-                const activeGlobalTask = state.allTasks.find(t => t.id === userTask.id);
-                if (activeGlobalTask && userTask.points >= activeGlobalTask.maxPoints && !userTask.completed) {
-                    userTask.completed = true;
-                    showToast(`Task "${userTask.title}" Completed!`, 'green');
-                }
-            }
-            
             saveStateToLocalStorage(); 
-            showToast('Document uploaded and points awarded!', 'green');
+            showToast('Document uploaded successfully! Points pending admin verification.', 'blue');
             elements.fileInput.value = ''; 
             elements.uploadBtn.classList.add('hidden'); 
             state.selectedFile = null; 
-            renderTaskScreen(); 
+            renderTaskScreen(); // Re-render to show new document with pending status
+        }
+
+        /**
+         * Admin action: Verifies a document and awards points.
+         * @param {string} userId - ID of the user who owns the document.
+         * @param {string} documentId - ID of the document to verify.
+         */
+        function verifyDocument(userId, documentId) {
+            showConfirmationModal(
+                'Verify Document',
+                'Are you sure you want to verify this document and award points?',
+                () => {
+                    const user = state.users.find(u => u.id === userId);
+                    if (!user) { showToast('User not found!', 'red'); return; }
+
+                    const doc = user.documents.find(d => d.id === documentId);
+                    if (!doc) { showToast('Document not found!', 'red'); return; }
+
+                    if (doc.isVerified) {
+                        showToast('Document already verified!', 'blue');
+                        return;
+                    }
+
+                    doc.isVerified = true;
+                    user.points += 5; // Award points for verification
+                    const userTask = user.tasks[0]; 
+                    if (userTask) {
+                        userTask.points += 5;
+                        const activeGlobalTask = state.allTasks.find(t => t.id === userTask.id);
+                        if (activeGlobalTask && userTask.points >= activeGlobalTask.maxPoints && !userTask.completed) {
+                            userTask.completed = true;
+                            showToast(`User ${user.name} completed task "${userTask.title}"!`, 'green');
+                        }
+                    }
+                    saveStateToLocalStorage();
+                    showToast(`Document verified for ${user.name}! (+5 points)`, 'green');
+                    // Re-render admin details modal to show updated status
+                    showAdminUserDetailsModal(userId); 
+                    renderAdminDashboard(); // Update counts in main admin list
+                }
+            );
+        }
+
+        /**
+         * Simulates viewing a PDF.
+         * @param {string} filename - The original filename of the PDF.
+         */
+        function viewPdf(filename) {
+            showToast(`Simulating PDF view for "${filename}". In a real app, this would open the PDF.`, 'blue');
+            // For a real app, you would fetch the PDF from a server and display it
+            // window.open('your_server_url/pdfs/' + filename, '_blank'); 
         }
 
         /**
          * Renders the list of uploaded documents for a given user.
          * This function is now generalized to be used by both user's own documents and admin's view.
-         * @param {HTMLElement} targetGrid - The HTML element (e.g., a div) where documents should be rendered.
+         * @param {HTMLElement} targetElement - The HTML element (e.g., a div or ul) where documents should be rendered.
          * @param {Array} documents - The array of document objects to display.
          * @param {HTMLElement} noDocumentsMessageElement - Optional: Element to show if no documents.
+         * @param {boolean} isAdminView - True if rendering for admin, to include verify buttons.
+         * @param {string} [ownerUserId] - Required if isAdminView is true, to know which user's document it is.
          */
-        function renderDocumentsForUser(targetGrid, documents, noDocumentsMessageElement = null) {
-            targetGrid.innerHTML = ''; // Clear existing documents
+        function renderDocumentsForUser(targetElement, documents, noDocumentsMessageElement = null, isAdminView = false, ownerUserId = null) {
+            targetElement.innerHTML = ''; // Clear existing documents
             if (documents && documents.length > 0) {
                 if (noDocumentsMessageElement) noDocumentsMessageElement.classList.add('hidden');
                 documents.forEach(doc => {
+                    const statusText = doc.isVerified ? 'Verified' : 'Pending';
+                    const statusColor = doc.isVerified ? 'text-green-600' : 'text-red-500';
+                    
                     const docCard = document.createElement('div');
-                    docCard.className = 'document-card cursor-pointer';
+                    docCard.className = `document-card bg-white p-3 rounded-lg shadow-sm border ${doc.isVerified ? 'border-green-200' : 'border-yellow-200'}`;
                     docCard.innerHTML = `
-                        <div class="pdf-icon">📄</div>
-                        <p class="text-sm font-medium text-gray-800">${doc.name}</p>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="pdf-icon">📄</span>
+                            <span class="text-xs font-semibold ${statusColor}">${statusText}</span>
+                        </div>
+                        <p class="text-sm font-medium text-gray-800 truncate">${doc.name}</p>
                         <p class="text-xs text-gray-500">${(doc.size / 1024).toFixed(1)} KB</p>
+                        <div class="mt-3 flex flex-wrap justify-center gap-2">
+                            <button data-filename="${doc.filename}" class="view-pdf-btn bg-blue-500 text-white px-3 py-1 rounded text-xs btn-hover hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 touch-target">View</button>
+                            ${isAdminView && !doc.isVerified ? `<button data-user-id="${ownerUserId}" data-document-id="${doc.id}" class="verify-document-btn bg-purple-500 text-white px-3 py-1 rounded text-xs btn-hover hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 touch-target">Verify</button>` : ''}
+                        </div>
                     `;
-                    docCard.addEventListener('click', () => {
-                        showToast(`Simulating view/download for: ${doc.filename}`, 'blue');
-                    });
-                    targetGrid.appendChild(docCard);
+                    targetElement.appendChild(docCard);
                 });
+
+                document.querySelectorAll('.view-pdf-btn').forEach(button => {
+                    button.addEventListener('click', (e) => viewPdf(e.target.dataset.filename));
+                });
+
+                if (isAdminView) {
+                    document.querySelectorAll('.verify-document-btn').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const userId = e.target.dataset.userId;
+                            const documentId = e.target.dataset.documentId;
+                            verifyDocument(userId, documentId);
+                        });
+                    });
+                }
+
             } else {
                 if (noDocumentsMessageElement) {
                     noDocumentsMessageElement.classList.remove('hidden');
-                    targetGrid.innerHTML = ''; 
+                    targetElement.innerHTML = ''; 
                 } else {
-                    targetGrid.innerHTML = '<p class="text-gray-500 text-center col-span-full">No documents uploaded yet.</p>';
+                    targetElement.innerHTML = '<p class="text-gray-500 text-center col-span-full">No documents uploaded yet.</p>';
                 }
             }
         }
 
-        // Original renderDocuments is now a wrapper for renderDocumentsForUser specific to current user's task screen
-        function renderDocuments() {
+        // Wrapper for user's own documents
+        function renderUserDocuments() {
             if (state.currentUser && state.currentUser.documents) {
-                renderDocumentsForUser(elements.documentGrid, state.currentUser.documents);
+                renderDocumentsForUser(elements.documentGrid, state.currentUser.documents, null, false);
             } else {
                 elements.documentGrid.innerHTML = '<p class="text-gray-500 text-center col-span-full">No documents uploaded yet.</p>';
             }
@@ -1237,7 +1389,7 @@
             }
         }
 
-        /* ----- Admin User Detail Modal Functions (new) ----- */
+        /* ----- Admin User Detail Modal Functions ----- */
 
         /**
          * Displays the admin user details modal for a specific user.
@@ -1290,7 +1442,8 @@
                  elements.adminModalTaskProgressText.textContent = 'Progress: 0% (0 / 0 pts)';
             }
 
-            renderDocumentsForUser(elements.adminModalUserDocumentsGrid, userToView.documents, elements.adminModalNoDocuments);
+            // Render user's documents in the admin modal, with verification buttons
+            renderDocumentsForUser(elements.adminModalUserDocumentsList, userToView.documents, elements.adminModalNoDocuments, true, userId);
         }
 
         /**
@@ -1313,19 +1466,19 @@
             elements.taskScreen.classList.add('hidden');
             elements.profileModal.classList.add('hidden'); 
             elements.adminUserDetailModal.classList.add('hidden'); 
-            elements.confirmationModal.classList.add('hidden'); // Ensure confirmation modal is hidden
-            document.body.classList.remove('overflow-hidden'); // Ensure body scroll is re-enabled
+            elements.confirmationModal.classList.add('hidden'); 
+            elements.editTaskModal.classList.add('hidden'); // Ensure edit task modal is hidden
+            document.body.classList.remove('overflow-hidden'); 
 
-            elements.authForm.reset(); // Clear form fields
-            clearAuthError(); // Clear auth error messages
+            elements.authForm.reset(); 
+            clearAuthError(); 
             elements.authTitle.textContent = 'Login';
             elements.toggleAuth.textContent = 'Create new account';
-            elements.nameField.classList.add('hidden'); // Hide name field for login by default
-            // Clear header profile pic display on logout
+            elements.nameField.classList.add('hidden'); 
             elements.headerProfilePic.classList.add('hidden');
             elements.headerProfilePic.src = '';
             elements.profileInitial.classList.remove('hidden');
-            elements.profileInitial.textContent = 'U'; // Reset to default initial
+            elements.profileInitial.textContent = 'U'; 
         }
 
         /**
@@ -1343,7 +1496,8 @@
             elements.taskScreen.classList.add('hidden');
             elements.profileModal.classList.add('hidden'); 
             elements.adminUserDetailModal.classList.add('hidden'); 
-            elements.confirmationModal.classList.add('hidden'); // Ensure confirmation modal is hidden
+            elements.confirmationModal.classList.add('hidden'); 
+            elements.editTaskModal.classList.add('hidden'); // Ensure edit task modal is hidden
             elements.mainApp.classList.remove('hidden'); 
             document.body.classList.remove('overflow-hidden'); 
 
@@ -1375,7 +1529,7 @@
          * Renders the user-specific dashboard content, including the leaderboard and current task.
          */
         function renderUserDashboard() {
-            elements.leaderboard.innerHTML = ''; // Clear existing leaderboard
+            elements.leaderboard.innerHTML = ''; 
             const sortedUsers = [...state.users]
                 .filter(u => !u.isAdmin)
                 .sort((a, b) => b.points - a.points); 
@@ -1395,7 +1549,7 @@
             }
 
             // Render Current Task info for user
-            const userTask = state.currentUser.tasks[0]; // Assuming user has one main task for now
+            const userTask = state.currentUser.tasks[0]; 
             if (userTask) {
                 const activeGlobalTask = state.allTasks.find(t => t.id === userTask.id);
                 if (activeGlobalTask) {
@@ -1449,11 +1603,15 @@
 
             if (nonAdminUsers.length > 0) {
                 nonAdminUsers.forEach(user => {
+                    const unverifiedDocsCount = user.documents.filter(d => !d.isVerified).length;
+                    const totalDocsCount = user.documents.length;
+                    const docStatusText = `${unverifiedDocsCount > 0 ? `<span class="text-red-500">${unverifiedDocsCount} unverified / </span>` : ''}${totalDocsCount}`;
+
                     const row = document.createElement('tr');
                     row.className = 'border-b border-gray-200 hover:bg-gray-50 transition-colors';
                     row.innerHTML = `
                         <td class="p-3 text-gray-700 font-medium break-all">${user.name} <span class="text-xs text-gray-500">(${user.email})</span></td>
-                        <td class="p-3 text-gray-600 text-center">${user.documents.length}</td>
+                        <td class="p-3 text-gray-600 text-center">${docStatusText}</td>
                         <td class="p-3 text-blue-600 font-semibold text-center">${user.points}</td>
                         <td class="p-3 flex flex-wrap gap-2 justify-center sm:justify-start">
                             <button data-user-id="${user.id}" class="admin-add-user-points bg-green-500 text-white px-2 py-1 rounded text-xs btn-hover hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 touch-target">Add 5</button>
@@ -1472,7 +1630,7 @@
                         const user = state.users.find(u => u.id === userId);
                         if (user) {
                             user.points += 5;
-                            const task = user.tasks[0]; // Assuming user has one task
+                            const task = user.tasks[0]; 
                             if (task) task.points += 5;
                             saveStateToLocalStorage();
                             showToast(`Added 5 points to ${user.name}`, 'green');
@@ -1549,11 +1707,9 @@
                 document.querySelectorAll('.set-active-task-btn').forEach(button => {
                     button.addEventListener('click', (e) => setActiveTask(e.target.dataset.taskId));
                 });
-                // Edit task functionality to be implemented (e.g., open a modal with task details)
                 document.querySelectorAll('.edit-task-btn').forEach(button => {
                     button.addEventListener('click', (e) => {
-                        showToast('Edit Task feature coming soon!', 'blue');
-                        // In a real app, you'd open a modal to edit task details here
+                        showEditTaskModal(e.target.dataset.taskId); // Open edit modal
                     });
                 });
 
@@ -1574,7 +1730,6 @@
                         <p class="text-xs text-gray-500 mt-2 text-right">Published: ${ann.date}</p>
                         <div class="mt-3 flex flex-wrap gap-2">
                             <button data-announcement-id="${ann.id}" class="delete-announcement-btn bg-gray-500 text-white px-3 py-1 rounded text-xs btn-hover hover:bg-gray-600 touch-target">Delete</button>
-                            <!-- Could add an edit or toggle visibility button here -->
                         </div>
                     `;
                     elements.adminAnnouncementsList.appendChild(annDiv);
@@ -1601,11 +1756,12 @@
             elements.mainApp.classList.add('hidden');
             elements.profileModal.classList.add('hidden'); 
             elements.adminUserDetailModal.classList.add('hidden'); 
-            elements.confirmationModal.classList.add('hidden'); // Ensure confirmation modal is hidden
+            elements.confirmationModal.classList.add('hidden'); 
+            elements.editTaskModal.classList.add('hidden'); // Ensure edit task modal is hidden
             elements.taskScreen.classList.remove('hidden'); 
             document.body.classList.remove('overflow-hidden'); 
 
-            const userTask = state.currentUser.tasks[0]; // Assuming user has one main task for now
+            const userTask = state.currentUser.tasks[0]; 
             if (userTask) {
                 const globalTask = state.allTasks.find(t => t.id === userTask.id);
                 elements.taskScreenTitle.textContent = globalTask ? globalTask.title : userTask.title;
@@ -1629,7 +1785,7 @@
                 elements.taskProgressDetailText.textContent = 'Progress: 0% (0 / 0 pts)';
             }
 
-            renderDocuments(); // Render current user's uploaded documents
+            renderUserDocuments(); // Render current user's uploaded documents
         }
 
         /* ----- Event Listeners Setup ----- */
@@ -1655,8 +1811,9 @@
             elements.closeAdminUserModal.addEventListener('click', hideAdminUserDetailsModal);
             elements.adminModalCloseBtn.addEventListener('click', hideAdminUserDetailsModal);
 
-            // Confirmation Modal Listeners
-            // Buttons wired up dynamically in showConfirmationModal
+            // Edit Task Modal Listeners
+            elements.closeEditTaskModal.addEventListener('click', hideEditTaskModal);
+            elements.editTaskForm.addEventListener('submit', handleEditTaskSubmit);
 
             // User Content Listeners
             elements.goToTask.addEventListener('click', renderTaskScreen);
@@ -1669,11 +1826,14 @@
             elements.adminAddPoints.addEventListener('click', () => {
                 showConfirmationModal(
                     'Add Points to All',
-                    'Are you sure you want to add 5 points to all regular users?',
+                    'Are you sure you want to add 5 points to all regular users (only for verified documents)?',
                     () => {
                         state.users.forEach(user => {
                             if (!user.isAdmin) {
-                                user.points += 5;
+                                // For simplicity, this "Add 5" button now just adds to overall score,
+                                // not necessarily tied to document verification for *this specific button*.
+                                // Actual document points are handled by verifyDocument.
+                                user.points += 5; 
                                 const task = user.tasks[0]; 
                                 if (task) task.points += 5; 
                             }
@@ -1693,7 +1853,7 @@
                         state.users.forEach(user => {
                             if (!user.isAdmin) {
                                 user.points = 0;
-                                user.documents = [];
+                                user.documents = user.documents.map(doc => ({ ...doc, isVerified: false })); // Reset verification status
                                 user.tasks.forEach(task => {
                                     task.completed = false;
                                     task.points = 0;
