@@ -100,16 +100,15 @@
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
-    <div id="app" class="container mx-auto px-4 py-6 max-w-4xl">
+    <div id="app" class="container mx-auto px-4 py-6 w-full max-w-4xl">
         
-        <!-- Auth Screen (Login/Sign Up) -->
         <div id="auth-screen" class="min-h-screen flex items-center justify-center fade-in">
             <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
                 <h2 id="auth-title" class="text-2xl font-bold text-center mb-6">Login</h2>
                 <form id="auth-form" class="space-y-4">
                     <div id="name-field" class="hidden">
                         <label for="name" class="block text-sm font-medium mb-1">Full Name</label>
-                        <input type="text" id="name" class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 touch-target" required>
+                        <input type="text" id="name" class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 touch-target">
                     </div>
                     <div>
                         <label for="email" class="block text-sm font-medium mb-1">Email</label>
@@ -132,13 +131,10 @@
             </div>
         </div>
 
-        <!-- Main App Content -->
         <div id="main-app" class="hidden fade-in">
-            <!-- Header -->
             <header class="bg-white p-4 rounded-xl shadow-md mb-6 flex justify-between items-center flex-wrap">
                 <h1 class="text-xl font-bold text-gray-800 mb-2 sm:mb-0">Task Monitor Pro</h1>
                 <div class="flex items-center space-x-2 mt-2 sm:mt-0">
-                    <!-- Profile Button with image or initial -->
                     <button id="profile-btn" class="w-10 h-10 rounded-full flex items-center justify-center btn-hover transition duration-200 ease-in-out overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 touch-target">
                         <img id="header-profile-pic" class="w-full h-full object-cover hidden" alt="Profile Picture">
                         <span id="profile-initial" class="font-medium text-gray-700 text-lg">U</span>
@@ -149,7 +145,6 @@
                 </div>
             </header>
 
-            <!-- User Content Area -->
             <div id="user-content">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="bg-white p-6 rounded-xl shadow-md">
@@ -166,13 +161,11 @@
                     <div class="bg-white p-6 rounded-xl shadow-md">
                         <h3 class="text-lg font-semibold mb-3 text-gray-700">Leaderboard</h3>
                         <ul id="leaderboard" class="divide-y divide-gray-200">
-                            <!-- Dynamic content for leaderboard -->
-                        </ul>
+                            </ul>
                     </div>
                 </div>
             </div>
 
-            <!-- Admin Content Area -->
             <div id="admin-content" class="hidden">
                 <div class="bg-white p-6 rounded-xl shadow-md mb-6">
                     <h2 class="text-xl font-bold mb-4 text-purple-700">Admin Dashboard</h2>
@@ -188,8 +181,7 @@
                                 </tr>
                             </thead>
                             <tbody id="admin-users-list">
-                                <!-- Dynamic content for admin users list -->
-                            </tbody>
+                                </tbody>
                         </table>
                     </div>
 
@@ -208,7 +200,6 @@
             </div>
         </div>
 
-        <!-- Task Screen -->
         <div id="task-screen" class="hidden fade-in">
             <div class="bg-white p-6 rounded-xl shadow-md mb-4">
                 <div class="flex justify-between items-center mb-4 flex-wrap">
@@ -219,8 +210,7 @@
                         Back to Dashboard
                     </button>
                     <h2 class="text-xl font-bold text-gray-800 mb-2 sm:mb-0">Python Task</h2>
-                    <div></div> <!-- Placeholder for spacing -->
-                </div>
+                    <div></div> </div>
 
                 <div class="space-y-6">
                     <div class="bg-blue-50 p-4 rounded-lg">
@@ -241,8 +231,7 @@
                         <h3 class="font-semibold text-lg mb-4 text-gray-700">Your Documents</h3>
                         <div id="document-container">
                             <div id="document-grid" class="document-grid mb-6">
-                                <!-- Documents will appear here -->
-                            </div>
+                                </div>
                             
                             <input type="file" id="file-input" accept=".pdf">
                             <label for="file-input" class="file-upload-label mb-4 transition duration-200 ease-in-out hover:border-blue-500 hover:bg-blue-50">
@@ -264,10 +253,8 @@
         </div>
     </div>
 
-    <!-- Toast Container (for notifications) -->
     <div id="toast-container" class="toast-container"></div>
 
-    <!-- Profile Modal (for current user) -->
     <div id="profile-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center modal-overlay">
         <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm modal-content relative">
             <button id="close-profile-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl focus:outline-none touch-target">&times;</button>
@@ -294,7 +281,6 @@
         </div>
     </div>
 
-    <!-- Admin User Detail Modal (for viewing other users by admin) -->
     <div id="admin-user-detail-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center modal-overlay">
         <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-lg modal-content relative">
             <button id="close-admin-user-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl focus:outline-none touch-target">&times;</button>
@@ -315,8 +301,7 @@
 
             <h4 class="text-lg font-semibold text-gray-700 mb-3">Documents Uploaded:</h4>
             <div id="admin-modal-user-documents-grid" class="document-grid mb-6">
-                <!-- User documents will be loaded here -->
-            </div>
+                </div>
             <p id="admin-modal-no-documents" class="text-gray-500 text-center col-span-full hidden">No documents uploaded by this user.</p>
             
             <button id="admin-modal-close-btn" class="w-full bg-gray-300 text-gray-800 p-3 rounded-lg font-medium btn-hover transition duration-200 ease-in-out hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 touch-target">Close</button>
@@ -326,8 +311,7 @@
     <script>
         // App State - Centralized data store
         const state = {
-            // Retrieve users from localStorage or initialize as empty array
-            users: localStorage.getItem('users') ? JSON.parse(localStorage.getItem('users')) : [],
+            users: [], // Will be loaded by refreshUsersState()
             currentUser: null, // Holds the currently logged-in user object
             tasks: [{ id: 'python', title: 'Python Programming' }], // Available tasks
             
@@ -414,10 +398,27 @@
         /* ----- Utility Functions ----- */
 
         /**
+         * Loads users from localStorage into the state.users array.
+         * This should be called whenever the application needs to ensure its in-memory
+         * user list is synchronized with the persistent storage.
+         */
+        function refreshUsersState() {
+            const storedUsers = localStorage.getItem('users');
+            state.users = storedUsers ? JSON.parse(storedUsers) : [];
+            console.log('--- refreshUsersState() ---');
+            console.log('localStorage "users":', storedUsers);
+            console.log('state.users (after refresh):', state.users.map(u => ({id: u.id, email: u.email, isAdmin: u.isAdmin})));
+        }
+
+        /**
          * Saves the current state of users array to localStorage.
+         * This should be called after any modification to the state.users array.
          */
         function saveUsersToLocalStorage() {
             localStorage.setItem('users', JSON.stringify(state.users));
+            console.log('--- saveUsersToLocalStorage() ---');
+            console.log('state.users saved to localStorage.');
+            console.log('Current localStorage "users":', localStorage.getItem('users'));
         }
 
         /**
@@ -461,35 +462,36 @@
          * Attempts to restore a user session from localStorage.
          */
         function initializeApp() {
-            console.log('initializeApp called.');
+            console.log('--- initializeApp() called. Starting application initialization flow ---');
+            refreshUsersState(); // Ensure state.users is up-to-date from localStorage immediately
+
             // Check if admin user exists; if not, create a default admin
             const adminExists = state.users.some(user => 
                 user.email === state.adminCredentials.email && user.isAdmin
             );
             
             if (!adminExists) {
-                console.log('Admin user not found, creating default admin.');
+                console.log('Admin user not found in localStorage, creating default admin.');
                 const adminUser = {
                     id: 'admin-' + Date.now(),
                     ...state.adminCredentials,
                     isAdmin: true,
                     points: 0,
-                    // Ensure admin also has a task, even if not directly using it
                     tasks: [{...state.tasks[0], completed: false, points: 0}],
                     documents: [],
                     profilePicture: '' // Default empty profile picture for admin
                 };
                 state.users.push(adminUser);
-                saveUsersToLocalStorage(); // Persist the new admin user
+                saveUsersToLocalStorage(); // Persist the new admin user immediately
+                refreshUsersState(); // Re-sync state.users after adding admin
+                console.log('Admin user created and saved.');
+            } else {
+                console.log('Admin user found in localStorage.');
             }
             
-            // Reload users from localStorage to ensure latest state after potential admin creation
-            state.users = localStorage.getItem('users') ? JSON.parse(localStorage.getItem('users')) : [];
-            console.log('Current users from localStorage:', state.users);
-
             // Attempt to restore the previous user session
             const storedCurrentUserEmail = localStorage.getItem('currentUserEmail');
-            console.log('Stored current user email:', storedCurrentUserEmail);
+            console.log('Checking for stored current user email in localStorage:', storedCurrentUserEmail);
 
             if (storedCurrentUserEmail) {
                 const user = state.users.find(u => u.email === storedCurrentUserEmail);
@@ -499,11 +501,11 @@
                     renderMainApp(); // Render main app if session restored
                     return; // Exit early as user is logged in
                 } else {
-                    console.log('Stored user email found but user not in state.users. Clearing invalid session.');
-                    localStorage.removeItem('currentUserEmail'); // Clear invalid session
+                    console.warn('Stored user email found, but user object not found in current users list. Clearing invalid session.');
+                    localStorage.removeItem('currentUserEmail'); // Clear invalid session if user doesn't exist
                 }
             }
-            console.log('No active session found. Rendering auth screen.');
+            console.log('No valid active session found. Rendering authentication screen.');
             renderAuthScreen(); // If no session or user not found, show auth screen
         }
 
@@ -517,8 +519,8 @@
             e.preventDefault(); // Prevent default form submission and page reload
             clearAuthError(); // Clear previous errors
             
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
             const name = document.getElementById('name').value.trim(); // Trim whitespace from name
 
             const isSignup = elements.authTitle.textContent === 'Sign Up';
@@ -531,6 +533,7 @@
                 }
             } catch (error) {
                 showAuthError(error.message); // Display error to the user
+                console.error('Authentication error:', error.message);
             }
         }
 
@@ -541,11 +544,17 @@
          * @param {string} name - User's full name.
          */
         function handleSignup(email, password, name) {
+            console.log('--- handleSignup() called ---');
             // Basic validation
             if (!name) {
                 throw new Error('Please enter your full name.');
             }
+            if (!email || !password) {
+                throw new Error('Email and password are required.');
+            }
             
+            refreshUsersState(); // Ensure state.users is freshest before checking for existing email
+
             // Check if email already exists
             const emailExists = state.users.some(user => user.email === email);
             if (emailExists) {
@@ -561,7 +570,7 @@
             const newUser = {
                 id: 'user-' + Date.now(), // Unique ID for the user
                 email,
-                password,
+                password, // In a real app, hash this password!
                 name,
                 isAdmin: false, // Regular user
                 points: 0,
@@ -572,10 +581,11 @@
             };
             
             state.users.push(newUser); // Add new user to the state
+            saveUsersToLocalStorage(); // Save updated users array immediately
+            
             state.currentUser = newUser; // Set as current user
             localStorage.setItem('currentUserEmail', newUser.email); // Store email for session persistence
-            saveUsersToLocalStorage(); // Save updated users array
-            console.log('User signed up and session set:', newUser.email);
+            console.log('User signed up and session set for:', newUser.email);
             showToast('Account created successfully!', 'green');
             renderMainApp(); // Transition to the main application view
         }
@@ -586,13 +596,19 @@
          * @param {string} password - User's password.
          */
         function handleLogin(email, password) {
+            console.log('--- handleLogin() called for email:', email);
+            refreshUsersState(); // Ensure state.users is freshest before finding user
+
+            if (!email || !password) {
+                throw new Error('Email and password are required.');
+            }
+
             // First, try to log in as admin
             if (email === state.adminCredentials.email && password === state.adminCredentials.password) {
                 let adminUser = state.users.find(u => u.email === email && u.isAdmin);
                 
-                // Ensure the admin user exists and is correctly structured in localStorage
                 if (!adminUser) {
-                    // This case should ideally not happen after initializeApp, but as a safeguard
+                    console.warn('Admin user not found in state.users during admin login attempt, creating a new admin object.');
                     adminUser = {
                         id: 'admin-' + Date.now(),
                         ...state.adminCredentials,
@@ -604,13 +620,15 @@
                     };
                     state.users.push(adminUser);
                     saveUsersToLocalStorage();
+                    refreshUsersState(); // Re-sync after adding
                 } else {
-                    // Update admin data in case some properties like 'isAdmin' were missing/incorrect
-                    // This ensures the found adminUser object from localStorage has all expected properties
+                    // Update admin data in case some properties like 'isAdmin' were altered in localStorage
+                    // This ensures the current admin object is fully up-to-date with credentials
                     Object.assign(adminUser, state.adminCredentials, { isAdmin: true });
-                    // Explicitly update existing admin entry
+                    // Find and replace the admin in the users array to ensure consistency
                     state.users = state.users.map(u => u.id === adminUser.id ? adminUser : u);
                     saveUsersToLocalStorage();
+                    // No need to refreshUsersState here as we just directly modified and saved state.users
                 }
 
                 state.currentUser = adminUser;
@@ -622,15 +640,19 @@
             }
             
             // If not admin, try to find a regular user
-            const user = state.users.find(u => u.email === email && u.password === password);
+            const user = state.users.find(u => u.email === email && u.password === password && !u.isAdmin); // Ensure it's not an admin
+            
+            console.log('Attempting to find regular user with email:', email);
+            console.log('Found user:', user ? user.email : 'None');
+
             if (!user) {
-                console.log('Invalid login attempt for:', email);
+                console.log('Invalid login attempt for:', email, '(User not found or password mismatch)');
                 throw new Error('Invalid email or password.'); // Authentication failed
             }
             
             state.currentUser = user; // Set as current user
             localStorage.setItem('currentUserEmail', user.email);
-            console.log('User logged in and session set:', user.email);
+            console.log('User logged in and session set for:', user.email);
             showToast(`Welcome back, ${user.name}!`, 'green');
             renderMainApp(); // Transition to main app for regular user
         }
@@ -639,21 +661,31 @@
          * Toggles the authentication form between Login and Sign Up modes.
          */
         function toggleAuthMode() {
+            console.log('--- toggleAuthMode() called ---');
             const isLogin = elements.authTitle.textContent === 'Login';
+            
             elements.authTitle.textContent = isLogin ? 'Sign Up' : 'Login';
             elements.toggleAuth.textContent = isLogin ? 'Have an account? Login' : 'Create new account';
             elements.nameField.classList.toggle('hidden', !isLogin); // Show name field only for Sign Up
+            
+            // Clear all form fields
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('name').value = '';
             clearAuthError(); // Clear any existing errors when switching modes
+            console.log('Auth mode toggled to:', elements.authTitle.textContent);
         }
 
         /**
          * Logs out the current user and returns to the authentication screen.
          */
         function logout() {
+            console.log('--- logout() called ---');
             state.currentUser = null; // Clear current user from state
             localStorage.removeItem('currentUserEmail'); // Remove session from localStorage
             showToast('Logged out successfully!', 'blue');
             renderAuthScreen(); // Show the login/sign up screen
+            console.log('User logged out. Session cleared.');
         }
 
         /* ----- Document & File Functions ----- */
@@ -715,7 +747,7 @@
             
             state.currentUser.documents.push(newDoc); // Add document to current user's list
             
-            // Award points for upload
+            // Award points
             state.currentUser.points += 5;
             const task = state.currentUser.tasks.find(t => t.id === 'python');
             if (task) {
@@ -900,6 +932,7 @@
          * Renders the authentication screen and hides other app sections.
          */
         function renderAuthScreen() {
+            console.log('--- renderAuthScreen() ---');
             elements.authScreen.classList.remove('hidden');
             elements.mainApp.classList.add('hidden');
             elements.taskScreen.classList.add('hidden');
@@ -923,6 +956,7 @@
          * Renders the main application dashboard, showing either user or admin content.
          */
         function renderMainApp() {
+            console.log('--- renderMainApp() ---');
             if (!state.currentUser) {
                 renderAuthScreen(); // Redirect to auth if no current user
                 return;
