@@ -6,8 +6,9 @@
     <title>Task Monitor Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Custom styles for animations and specific elements */
         .btn-hover:active { transform: scale(0.98); }
-        .touch-target { min-height: 48px; }
+        .touch-target { min-height: 48px; } /* Ensures sufficient touch target size */
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .fade-in { animation: fadeIn 0.3s ease-in; }
         .document-grid {
@@ -64,7 +65,7 @@
             opacity: 0;
             transform: translateY(-20px);
             animation: slideIn 0.3s forwards, fadeOut 0.5s 2.5s forwards;
-            pointer-events: auto; /* Re-enable clicks for the toast itself if needed (though usually not for toasts) */
+            pointer-events: auto; /* Re-enable clicks for the toast itself */
         }
         .toast.red { background-color: #ef4444; }
         .toast.green { background-color: #22c55e; }
@@ -77,28 +78,48 @@
         @keyframes fadeOut {
             to { opacity: 0; transform: translateY(-20px); }
         }
+
+        /* Modal Styles */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            transition: opacity 0.3s ease-in-out;
+        }
+        .modal-content {
+            animation: fadeIn 0.3s ease-out;
+            max-height: 90vh; /* Limit height for responsiveness */
+            overflow-y: auto; /* Enable scrolling for long content */
+        }
+        .modal-profile-pic-lg {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 4px solid #a78bfa; /* A nice purple border */
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
     <div id="app" class="container mx-auto px-4 py-6 max-w-4xl">
         
+        <!-- Auth Screen (Login/Sign Up) -->
         <div id="auth-screen" class="min-h-screen flex items-center justify-center fade-in">
             <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
                 <h2 id="auth-title" class="text-2xl font-bold text-center mb-6">Login</h2>
                 <form id="auth-form" class="space-y-4">
                     <div id="name-field" class="hidden">
-                        <label class="block text-sm font-medium mb-1">Full Name</label>
-                        <input type="text" id="name" class="w-full p-3 border rounded-lg touch-target" required>
+                        <label for="name" class="block text-sm font-medium mb-1">Full Name</label>
+                        <input type="text" id="name" class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 touch-target" required>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">Email</label>
-                        <input type="email" id="email" class="w-full p-3 border rounded-lg touch-target" required>
+                        <label for="email" class="block text-sm font-medium mb-1">Email</label>
+                        <input type="email" id="email" class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 touch-target" required>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">Password</label>
-                        <input type="password" id="password" class="w-full p-3 border rounded-lg touch-target" required>
+                        <label for="password" class="block text-sm font-medium mb-1">Password</label>
+                        <input type="password" id="password" class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 touch-target" required>
                     </div>
-                    <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg font-medium btn-hover touch-target">
+                    <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg font-medium btn-hover transition duration-200 ease-in-out hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 touch-target">
                         Login
                     </button>
                 </form>
@@ -111,67 +132,75 @@
             </div>
         </div>
 
+        <!-- Main App Content -->
         <div id="main-app" class="hidden fade-in">
+            <!-- Header -->
             <header class="bg-white p-4 rounded-xl shadow-md mb-6 flex justify-between items-center">
-                <h1 class="text-xl font-bold">Task Monitor Pro</h1>
+                <h1 class="text-xl font-bold text-gray-800">Task Monitor Pro</h1>
                 <div class="flex items-center space-x-2">
-                    <button id="profile-btn" class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center btn-hover touch-target">
-                        <span id="profile-initial" class="font-medium">U</span>
+                    <!-- Profile Button with image or initial -->
+                    <button id="profile-btn" class="w-10 h-10 rounded-full flex items-center justify-center btn-hover transition duration-200 ease-in-out overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 touch-target">
+                        <img id="header-profile-pic" class="w-full h-full object-cover hidden" alt="Profile Picture">
+                        <span id="profile-initial" class="font-medium text-gray-700 text-lg">U</span>
                     </button>
-                    <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg text-sm btn-hover touch-target">
+                    <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg text-sm btn-hover transition duration-200 ease-in-out hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 touch-target">
                         Logout
                     </button>
                 </div>
             </header>
 
+            <!-- User Content Area -->
             <div id="user-content">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="bg-white p-6 rounded-xl shadow-md">
-                        <h3 class="text-lg font-semibold mb-3">Current Task</h3>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-700">Current Task</h3>
                         <div class="bg-blue-50 p-4 rounded-lg">
                             <p class="font-medium text-blue-800">Python Programming</p>
                             <p class="text-gray-600 my-2">Complete the exercises and submit your notes</p>
-                            <button id="go-to-task" class="bg-blue-600 text-white px-4 py-2 rounded-lg w-full mt-2 btn-hover touch-target">
+                            <button id="go-to-task" class="bg-blue-600 text-white px-4 py-2 rounded-lg w-full mt-2 btn-hover transition duration-200 ease-in-out hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 touch-target">
                                 Start Task
                             </button>
                         </div>
                     </div>
 
                     <div class="bg-white p-6 rounded-xl shadow-md">
-                        <h3 class="text-lg font-semibold mb-3">Leaderboard</h3>
-                        <ul id="leaderboard" class="divide-y">
-                            </ul>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-700">Leaderboard</h3>
+                        <ul id="leaderboard" class="divide-y divide-gray-200">
+                            <!-- Dynamic content for leaderboard -->
+                        </ul>
                     </div>
                 </div>
             </div>
 
+            <!-- Admin Content Area -->
             <div id="admin-content" class="hidden">
                 <div class="bg-white p-6 rounded-xl shadow-md mb-6">
                     <h2 class="text-xl font-bold mb-4 text-purple-700">Admin Dashboard</h2>
                     
                     <div class="mb-6 overflow-x-auto">
-                        <table class="w-full border-collapse">
+                        <table class="w-full border-collapse min-w-max">
                             <thead>
-                                <tr class="bg-gray-100">
-                                    <th class="p-3 text-left">User</th>
-                                    <th class="p-3 text-left">Documents</th>
-                                    <th class="p-3 text-left">Points</th>
-                                    <th class="p-3 text-left">Actions</th>
+                                <tr class="bg-gray-100 text-gray-600">
+                                    <th class="p-3 text-left font-semibold">User</th>
+                                    <th class="p-3 text-left font-semibold">Documents</th>
+                                    <th class="p-3 text-left font-semibold">Points</th>
+                                    <th class="p-3 text-left font-semibold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="admin-users-list">
-                                </tbody>
+                                <!-- Dynamic content for admin users list -->
+                            </tbody>
                         </table>
                     </div>
 
                     <div class="space-y-4">
-                        <h3 class="text-lg font-semibold">Quick Actions</h3>
-                        <div class="grid grid-cols-2 gap-3">
-                            <button id="admin-add-points" class="bg-green-600 text-white p-3 rounded-lg btn-hover touch-target">
-                                +5 to All
+                        <h3 class="text-lg font-semibold text-gray-700">Quick Actions (All Users)</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button id="admin-add-points" class="bg-green-600 text-white p-3 rounded-lg btn-hover transition duration-200 ease-in-out hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 touch-target">
+                                +5 to All Regular Users
                             </button>
-                            <button id="admin-reset-points" class="bg-red-600 text-white p-3 rounded-lg btn-hover touch-target">
-                                Reset All
+                            <button id="admin-reset-points" class="bg-red-600 text-white p-3 rounded-lg btn-hover transition duration-200 ease-in-out hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 touch-target">
+                                Reset All Regular Users Data
                             </button>
                         </div>
                     </div>
@@ -179,51 +208,53 @@
             </div>
         </div>
 
+        <!-- Task Screen -->
         <div id="task-screen" class="hidden fade-in">
             <div class="bg-white p-6 rounded-xl shadow-md mb-4">
                 <div class="flex justify-between items-center mb-4">
-                    <button id="back-btn" class="flex items-center text-blue-600 btn-hover touch-target">
+                    <button id="back-btn" class="flex items-center text-blue-600 btn-hover transition duration-200 ease-in-out hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 touch-target">
                         <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                         </svg>
-                        Back
+                        Back to Dashboard
                     </button>
-                    <h2 class="text-xl font-bold">Python Task</h2>
-                    <div></div>
+                    <h2 class="text-xl font-bold text-gray-800">Python Task</h2>
+                    <div></div> <!-- Placeholder for spacing -->
                 </div>
 
                 <div class="space-y-6">
                     <div class="bg-blue-50 p-4 rounded-lg">
-                        <h3 class="font-semibold text-lg mb-2">Your Progress</h3>
+                        <h3 class="font-semibold text-lg mb-2 text-blue-900">Your Progress</h3>
                         <div class="flex flex-col sm:flex-row justify-around">
                             <div class="text-center mb-4 sm:mb-0">
-                                <p>Points</p>
-                                <p class="text-2xl font-bold" id="task-points">0</p>
+                                <p class="text-gray-600">Points</p>
+                                <p class="text-2xl font-bold text-blue-800" id="task-points">0</p>
                             </div>
                             <div class="text-center">
-                                <p>Completed</p>
+                                <p class="text-gray-600">Completed</p>
                                 <p class="text-2xl font-bold" id="task-completed">No</p>
                             </div>
                         </div>
                     </div>
 
                     <div>
-                        <h3 class="font-semibold text-lg mb-4">Your Documents</h3>
+                        <h3 class="font-semibold text-lg mb-4 text-gray-700">Your Documents</h3>
                         <div id="document-container">
                             <div id="document-grid" class="document-grid mb-6">
-                                </div>
+                                <!-- Documents will appear here -->
+                            </div>
                             
                             <input type="file" id="file-input" accept=".pdf">
-                            <label for="file-input" class="file-upload-label mb-4">
+                            <label for="file-input" class="file-upload-label mb-4 transition duration-200 ease-in-out hover:border-blue-500 hover:bg-blue-50">
                                 <div class="flex flex-col items-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                     </svg>
                                     <p class="text-gray-700">Upload a PDF file</p>
-                                    <p class="text-sm text-gray-500">Click to browse</p>
+                                    <p class="text-sm text-gray-500">Click to browse (PDFs only)</p>
                                 </div>
                             </label>
-                            <button id="upload-btn" class="bg-green-600 text-white p-3 rounded-lg w-full font-medium btn-hover touch-target hidden">
+                            <button id="upload-btn" class="bg-green-600 text-white p-3 rounded-lg w-full font-medium btn-hover transition duration-200 ease-in-out hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 hidden touch-target">
                                 Upload Document (+5pts)
                             </button>
                         </div>
@@ -233,29 +264,57 @@
         </div>
     </div>
 
+    <!-- Toast Container (for notifications) -->
     <div id="toast-container" class="toast-container"></div>
 
-    <script>
-        // App State
-        const state = {
-            users: localStorage.getItem('users') ? JSON.parse(localStorage.getItem('users')) : [],
-            currentUser: null,
-            tasks: [{ id: 'python', title: 'Python Programming' }],
+    <!-- Profile Modal -->
+    <div id="profile-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center modal-overlay">
+        <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm modal-content relative">
+            <button id="close-profile-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl focus:outline-none touch-target">&times;</button>
+            <h3 class="text-2xl font-bold text-center mb-6 text-purple-700">My Profile</h3>
             
-            // Hardcoded admin credentials (only visible in source code)
+            <div class="flex flex-col items-center mb-6">
+                <div class="relative mb-4">
+                    <img id="modal-profile-pic" class="modal-profile-pic-lg hidden" src="" alt="Profile Picture">
+                    <div id="modal-profile-initial" class="modal-profile-pic-lg bg-gray-200 flex items-center justify-center text-5xl font-semibold text-gray-700">U</div>
+                    <label for="profile-pic-input-modal" class="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-2 cursor-pointer shadow-md hover:bg-blue-600 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <input type="file" id="profile-pic-input-modal" accept="image/*" class="hidden">
+                    </label>
+                </div>
+                <p id="modal-user-name" class="text-xl font-semibold text-gray-800 mb-2">Name: </p>
+                <p id="modal-user-email" class="text-gray-600 mb-2">Email: </p>
+                <p id="modal-user-points" class="text-lg font-medium text-blue-700">Total Points: </p>
+            </div>
+            
+            <button id="modal-close-btn" class="w-full bg-gray-300 text-gray-800 p-3 rounded-lg font-medium btn-hover transition duration-200 ease-in-out hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 touch-target">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // App State - Centralized data store
+        const state = {
+            // Retrieve users from localStorage or initialize as empty array
+            users: localStorage.getItem('users') ? JSON.parse(localStorage.getItem('users')) : [],
+            currentUser: null, // Holds the currently logged-in user object
+            tasks: [{ id: 'python', title: 'Python Programming' }], // Available tasks
+            
+            // Hardcoded admin credentials for initial setup and access
             adminCredentials: {
                 email: 'admin@example.com',
                 password: 'adminpass',
                 name: 'Admin'
             },
             
-            // File handling
-            selectedFile: null
+            selectedFile: null // For PDF file uploads
         };
 
-        // DOM Elements
+        // DOM Elements - Cached references to frequently accessed DOM elements
         const elements = {
-            // Auth elements
+            // Authentication screen elements
             authScreen: document.getElementById('auth-screen'),
             authForm: document.getElementById('auth-form'),
             authTitle: document.getElementById('auth-title'),
@@ -263,71 +322,105 @@
             toggleAuth: document.getElementById('toggle-auth'),
             authError: document.getElementById('auth-error'),
             
-            // Main app elements
+            // Main application header and layout
             mainApp: document.getElementById('main-app'),
             logoutBtn: document.getElementById('logout-btn'),
             profileBtn: document.getElementById('profile-btn'),
             profileInitial: document.getElementById('profile-initial'),
+            headerProfilePic: document.getElementById('header-profile-pic'), // New: for header profile image
             
-            // Content sections
+            // Content sections (user vs. admin)
             userContent: document.getElementById('user-content'),
             adminContent: document.getElementById('admin-content'),
             
-            // Task elements
+            // Task-related elements
             taskScreen: document.getElementById('task-screen'),
             goToTask: document.getElementById('go-to-task'),
             backBtn: document.getElementById('back-btn'),
             taskPoints: document.getElementById('task-points'),
             taskCompleted: document.getElementById('task-completed'),
             
-            // Documents elements
+            // Document upload elements
             documentGrid: document.getElementById('document-grid'),
-            fileInput: document.getElementById('file-input'),
+            fileInput: document.getElementById('file-input'), // For PDF upload
             uploadBtn: document.getElementById('upload-btn'),
             
-            // Leaderboard
+            // Leaderboard elements
             leaderboard: document.getElementById('leaderboard'),
             
-            // Admin elements
+            // Admin dashboard elements
             adminUsersList: document.getElementById('admin-users-list'),
             adminAddPoints: document.getElementById('admin-add-points'),
             adminResetPoints: document.getElementById('admin-reset-points'),
 
-            // Toast Container
-            toastContainer: document.getElementById('toast-container')
+            // Toast notification container
+            toastContainer: document.getElementById('toast-container'),
+
+            // New: Profile Modal elements
+            profileModal: document.getElementById('profile-modal'),
+            modalProfilePic: document.getElementById('modal-profile-pic'),
+            modalProfileInitial: document.getElementById('modal-profile-initial'),
+            modalUserName: document.getElementById('modal-user-name'),
+            modalUserEmail: document.getElementById('modal-user-email'),
+            modalUserPoints: document.getElementById('modal-user-points'),
+            profilePicInputModal: document.getElementById('profile-pic-input-modal'), // For profile pic upload in modal
+            closeProfileModalBtn: document.getElementById('close-profile-modal'), // Close button for modal
+            modalCloseBtn: document.getElementById('modal-close-btn') // Another close button for modal (redundant, using first one)
         };
 
         /* ----- Utility Functions ----- */
+
+        /**
+         * Saves the current state of users array to localStorage.
+         */
         function saveUsersToLocalStorage() {
             localStorage.setItem('users', JSON.stringify(state.users));
         }
 
+        /**
+         * Clears any displayed authentication error messages.
+         */
         function clearAuthError() {
             elements.authError.textContent = '';
             elements.authError.classList.add('hidden');
         }
 
+        /**
+         * Displays an authentication error message.
+         * @param {string} message - The error message to display.
+         */
         function showAuthError(message) {
             elements.authError.textContent = message;
             elements.authError.classList.remove('hidden');
         }
 
+        /**
+         * Displays a temporary toast notification.
+         * @param {string} message - The message to display in the toast.
+         * @param {string} type - The type of toast (e.g., 'red', 'green', 'blue', 'purple', 'default').
+         */
         function showToast(message, type = 'default') {
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.textContent = message;
             elements.toastContainer.appendChild(toast);
 
+            // Remove the toast after a few seconds
             setTimeout(() => {
                 toast.remove();
-            }, 3000); // Toast disappears after 3 seconds
+            }, 3000);
         }
 
         /* ----- Initialization ----- */
+
+        /**
+         * Initializes the application state, including creating an admin user if not present.
+         * Attempts to restore a user session from localStorage.
+         */
         function initializeApp() {
-            // Check if admin exists, if not create one
+            // Check if admin user exists; if not, create a default admin
             const adminExists = state.users.some(user => 
-                user.email === state.adminCredentials.email
+                user.email === state.adminCredentials.email && user.isAdmin
             );
             
             if (!adminExists) {
@@ -336,39 +429,41 @@
                     ...state.adminCredentials,
                     isAdmin: true,
                     points: 0,
+                    // Ensure admin also has a task, even if not directly using it
                     tasks: [{...state.tasks[0], completed: false, points: 0}],
-                    documents: []
+                    documents: [],
+                    profilePicture: '' // Default empty profile picture for admin
                 };
                 state.users.push(adminUser);
-                saveUsersToLocalStorage();
+                saveUsersToLocalStorage(); // Persist the new admin user
             }
             
-            // Load from localStorage (this is redundant if initializeApp is called first, but harmless)
-            if (localStorage.getItem('users')) {
-                state.users = JSON.parse(localStorage.getItem('users'));
-            }
-            
-            // Attempt to restore session
+            // Attempt to restore the previous user session
             const storedCurrentUserEmail = localStorage.getItem('currentUserEmail');
             if (storedCurrentUserEmail) {
                 const user = state.users.find(u => u.email === storedCurrentUserEmail);
                 if (user) {
                     state.currentUser = user;
-                    renderMainApp();
-                    return;
+                    renderMainApp(); // Render main app if session restored
+                    return; // Exit early as user is logged in
                 }
             }
-            renderAuthScreen(); // Show auth screen if no current user
+            renderAuthScreen(); // If no session or user not found, show auth screen
         }
 
-        /* ----- Auth Functions ----- */
+        /* ----- Authentication Functions ----- */
+
+        /**
+         * Handles the form submission for both login and sign up.
+         * @param {Event} e - The submit event object.
+         */
         function handleAuthSubmit(e) {
-            e.preventDefault();
-            clearAuthError();
+            e.preventDefault(); // Prevent default form submission and page reload
+            clearAuthError(); // Clear previous errors
             
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const name = document.getElementById('name').value || 'User';
+            const name = document.getElementById('name').value.trim(); // Trim whitespace from name
 
             const isSignup = elements.authTitle.textContent === 'Sign Up';
             
@@ -379,132 +474,178 @@
                     handleLogin(email, password);
                 }
             } catch (error) {
-                showAuthError(error.message);
+                showAuthError(error.message); // Display error to the user
             }
         }
 
+        /**
+         * Handles new user registration (sign up).
+         * @param {string} email - User's email.
+         * @param {string} password - User's password.
+         * @param {string} name - User's full name.
+         */
         function handleSignup(email, password, name) {
-            // Validate email is not already taken
+            // Basic validation
+            if (!name) {
+                throw new Error('Please enter your full name.');
+            }
+            
+            // Check if email already exists
             const emailExists = state.users.some(user => user.email === email);
             if (emailExists) {
-                throw new Error('Email already in use');
+                throw new Error('Email already in use. Try logging in or use a different email.');
             }
 
-            // Password validation
+            // Password strength validation
             if (password.length < 6) {
-                throw new Error('Password must be at least 6 characters');
+                throw new Error('Password must be at least 6 characters long.');
             }
 
-            // Create new user
+            // Create new user object
             const newUser = {
-                id: 'user-' + Date.now(),
+                id: 'user-' + Date.now(), // Unique ID for the user
                 email,
                 password,
                 name,
-                isAdmin: false,
+                isAdmin: false, // Regular user
                 points: 0,
+                // Assign a copy of the default task for the new user
                 tasks: [{...state.tasks[0], completed: false, points: 0}],
-                documents: []
+                documents: [],
+                profilePicture: '' // Initialize with no profile picture
             };
             
-            state.users.push(newUser);
-            state.currentUser = newUser;
-            localStorage.setItem('currentUserEmail', newUser.email); // Store current user for session
-            saveUsersToLocalStorage();
-            showToast('Account created!', 'green');
-            renderMainApp();
+            state.users.push(newUser); // Add new user to the state
+            state.currentUser = newUser; // Set as current user
+            localStorage.setItem('currentUserEmail', newUser.email); // Store email for session persistence
+            saveUsersToLocalStorage(); // Save updated users array
+            showToast('Account created successfully!', 'green');
+            renderMainApp(); // Transition to the main application view
         }
 
+        /**
+         * Handles user login.
+         * @param {string} email - User's email.
+         * @param {string} password - User's password.
+         */
         function handleLogin(email, password) {
-            // Check admin credentials first
+            // First, try to log in as admin
             if (email === state.adminCredentials.email && password === state.adminCredentials.password) {
                 let adminUser = state.users.find(u => u.email === email && u.isAdmin);
                 
-                // This part ensures admin user exists and has correct structure (safety net)
+                // Ensure the admin user exists and is correctly structured in localStorage
                 if (!adminUser) {
+                    // This case should ideally not happen after initializeApp, but as a safeguard
                     adminUser = {
                         id: 'admin-' + Date.now(),
                         ...state.adminCredentials,
                         isAdmin: true,
                         points: 0,
                         tasks: [{...state.tasks[0], completed: false, points: 0}],
-                        documents: []
+                        documents: [],
+                        profilePicture: ''
                     };
                     state.users.push(adminUser);
+                    saveUsersToLocalStorage();
                 } else {
-                    // Update admin details in case they were altered in localStorage
-                    adminUser.name = state.adminCredentials.name;
-                    adminUser.password = state.adminCredentials.password; // Ensure password is correct if localStorage was modified
+                    // Update admin data in case some properties like 'isAdmin' were missing/incorrect
+                    // This ensures the found adminUser object from localStorage has all expected properties
+                    Object.assign(adminUser, state.adminCredentials, { isAdmin: true });
+                    // Explicitly update existing admin entry
+                    state.users = state.users.map(u => u.id === adminUser.id ? adminUser : u);
+                    saveUsersToLocalStorage();
                 }
 
                 state.currentUser = adminUser;
-                localStorage.setItem('currentUserEmail', adminUser.email); // Store current user for session
-                saveUsersToLocalStorage(); // Persist any admin changes or new admin creation
-                showToast('Welcome Admin!', 'purple');
+                localStorage.setItem('currentUserEmail', adminUser.email);
+                showToast('Welcome, Admin!', 'purple');
                 renderMainApp();
-                return;
+                return; // Exit after successful admin login
             }
             
-            // Check regular user credentials
+            // If not admin, try to find a regular user
             const user = state.users.find(u => u.email === email && u.password === password);
             if (!user) {
-                throw new Error('Invalid email or password');
+                throw new Error('Invalid email or password.'); // Authentication failed
             }
             
-            state.currentUser = user;
-            localStorage.setItem('currentUserEmail', user.email); // Store current user for session
-            showToast(`Welcome back ${user.name}!`, 'green');
-            renderMainApp();
+            state.currentUser = user; // Set as current user
+            localStorage.setItem('currentUserEmail', user.email);
+            showToast(`Welcome back, ${user.name}!`, 'green');
+            renderMainApp(); // Transition to main app for regular user
         }
 
+        /**
+         * Toggles the authentication form between Login and Sign Up modes.
+         */
         function toggleAuthMode() {
             const isLogin = elements.authTitle.textContent === 'Login';
             elements.authTitle.textContent = isLogin ? 'Sign Up' : 'Login';
             elements.toggleAuth.textContent = isLogin ? 'Have an account? Login' : 'Create new account';
-            elements.nameField.classList.toggle('hidden', !isLogin);
-            clearAuthError();
+            elements.nameField.classList.toggle('hidden', !isLogin); // Show name field only for Sign Up
+            clearAuthError(); // Clear any existing errors when switching modes
         }
 
+        /**
+         * Logs out the current user and returns to the authentication screen.
+         */
         function logout() {
-            state.currentUser = null;
-            localStorage.removeItem('currentUserEmail'); // Clear current user from session
+            state.currentUser = null; // Clear current user from state
+            localStorage.removeItem('currentUserEmail'); // Remove session from localStorage
             showToast('Logged out successfully!', 'blue');
-            renderAuthScreen();
+            renderAuthScreen(); // Show the login/sign up screen
         }
 
-        /* ----- Document Functions ----- */
+        /* ----- Document & File Functions ----- */
+
+        /**
+         * Sets up event listeners for file input and upload button.
+         */
         function setupFileUpload() {
+            // Listen for file selection
             elements.fileInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
-                if (!file) return;
-                
-                if (file.type !== 'application/pdf') {
-                    showToast('Please upload a PDF file', 'red');
-                    elements.uploadBtn.classList.add('hidden'); // Hide upload button if wrong file type
-                    state.selectedFile = null; // Clear selected file
+                if (!file) {
+                    elements.uploadBtn.classList.add('hidden'); // Hide if no file selected
+                    state.selectedFile = null;
                     return;
                 }
                 
-                state.selectedFile = file;
-                elements.uploadBtn.classList.remove('hidden');
+                // Validate file type
+                if (file.type !== 'application/pdf') {
+                    showToast('Please upload a PDF file only.', 'red');
+                    elements.uploadBtn.classList.add('hidden');
+                    state.selectedFile = null;
+                    return;
+                }
+                
+                state.selectedFile = file; // Store the selected file
+                elements.uploadBtn.classList.remove('hidden'); // Show upload button
                 elements.uploadBtn.textContent = `Upload "${file.name}" (+5pts)`;
             });
             
+            // Listen for upload button click
             elements.uploadBtn.addEventListener('click', uploadDocument);
         }
 
+        /**
+         * Handles the document upload process (simulated).
+         */
         function uploadDocument() {
-            if (!state.selectedFile || !state.currentUser) return;
+            if (!state.selectedFile || !state.currentUser) return; // Ensure file and user exist
             
-            // Create a unique filename with date
             const now = new Date();
             const day = now.getDate().toString().padStart(2, '0');
             const month = (now.getMonth() + 1).toString().padStart(2, '0');
             const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][now.getDay()];
+            // Generate a descriptive name for the document
             const docName = `Day ${state.currentUser.documents.length + 1} (${dayName} ${day}.${month})`;
             
+            // In a real application, you would send state.selectedFile to a server here.
+            // For this client-side demo, we just store metadata.
+            
             const newDoc = {
-                id: 'doc-' + Date.now(),
+                id: 'doc-' + Date.now(), // Unique ID for the document
                 name: docName,
                 filename: state.selectedFile.name,
                 size: state.selectedFile.size,
@@ -512,29 +653,31 @@
                 day: state.currentUser.documents.length + 1
             };
             
-            // Add to user's documents
-            state.currentUser.documents.push(newDoc);
+            state.currentUser.documents.push(newDoc); // Add document to current user's list
             
-            // Award points
+            // Award points for upload
             state.currentUser.points += 5;
             const task = state.currentUser.tasks.find(t => t.id === 'python');
             if (task) {
-                task.points += 5;
-                // You might mark task as completed after a certain number of documents/points
-                if (task.points >= 20 && !task.completed) { // Example: complete task after 20 points
+                task.points += 5; // Also add points to the specific task
+                // Check if task is completed (example logic)
+                if (task.points >= 20 && !task.completed) {
                     task.completed = true;
                     showToast('Python Task Completed!', 'green');
                 }
             }
             
-            saveUsersToLocalStorage();
+            saveUsersToLocalStorage(); // Save updated user data
             showToast('Document uploaded and points awarded!', 'green');
-            elements.fileInput.value = ''; // Clear file input
+            elements.fileInput.value = ''; // Clear file input field
             elements.uploadBtn.classList.add('hidden'); // Hide upload button
-            state.selectedFile = null; // Clear selected file state
-            renderTaskScreen(); // Re-render to show updated documents and points
+            state.selectedFile = null; // Clear selected file in state
+            renderTaskScreen(); // Re-render task screen to reflect changes
         }
 
+        /**
+         * Renders the list of uploaded documents for the current user.
+         */
         function renderDocuments() {
             elements.documentGrid.innerHTML = ''; // Clear existing documents
             if (state.currentUser && state.currentUser.documents.length > 0) {
@@ -546,10 +689,9 @@
                         <p class="text-sm font-medium text-gray-800">${doc.name}</p>
                         <p class="text-xs text-gray-500">${(doc.size / 1024).toFixed(1)} KB</p>
                     `;
-                    // In a real app, clicking this would open/download the document
+                    // Attach event listener to view/download document (simulated for demo)
                     docCard.addEventListener('click', () => {
-                        showToast(`Viewing: ${doc.filename}`, 'blue');
-                        // For a real PDF, you'd navigate to its URL or trigger download
+                        showToast(`Simulating view/download for: ${doc.filename}`, 'blue');
                     });
                     elements.documentGrid.appendChild(docCard);
                 });
@@ -558,31 +700,121 @@
             }
         }
 
+        /* ----- Profile Modal Functions ----- */
+
+        /**
+         * Displays the user profile modal with current user's details.
+         */
+        function showProfileModal() {
+            if (!state.currentUser) {
+                showToast('Please log in to view your profile.', 'red');
+                return;
+            }
+
+            elements.profileModal.classList.remove('hidden'); // Show the modal overlay
+
+            // Populate modal with current user data
+            if (state.currentUser.profilePicture) {
+                elements.modalProfilePic.src = state.currentUser.profilePicture;
+                elements.modalProfilePic.classList.remove('hidden');
+                elements.modalProfileInitial.classList.add('hidden'); // Hide initial if image exists
+            } else {
+                elements.modalProfilePic.src = '';
+                elements.modalProfilePic.classList.add('hidden');
+                elements.modalProfileInitial.classList.remove('hidden'); // Show initial if no image
+                elements.modalProfileInitial.textContent = state.currentUser.name ? state.currentUser.name.charAt(0).toUpperCase() : 'U';
+            }
+            
+            elements.modalUserName.textContent = `Name: ${state.currentUser.name}`;
+            elements.modalUserEmail.textContent = `Email: ${state.currentUser.email}`;
+            elements.modalUserPoints.textContent = `Total Points: ${state.currentUser.points}`;
+        }
+
+        /**
+         * Hides the user profile modal.
+         */
+        function hideProfileModal() {
+            elements.profileModal.classList.add('hidden'); // Hide the modal overlay
+        }
+
+        /**
+         * Handles the upload of a new profile picture from the modal.
+         * @param {Event} e - The change event from the file input.
+         */
+        function handleProfilePicUpload(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Check if file is an image
+                if (!file.type.startsWith('image/')) {
+                    showToast('Please upload an image file (PNG, JPG, GIF, etc.).', 'red');
+                    e.target.value = ''; // Clear the file input
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    if (state.currentUser) {
+                        state.currentUser.profilePicture = event.target.result; // Store base64 string
+                        saveUsersToLocalStorage();
+                        showToast('Profile picture updated!', 'green');
+                        renderMainApp(); // Update header profile pic
+                        showProfileModal(); // Re-open modal to show new pic
+                    }
+                };
+                reader.readAsDataURL(file); // Read file as base64
+            }
+        }
+
         /* ----- Render Functions (UI Updates) ----- */
+
+        /**
+         * Renders the authentication screen and hides other app sections.
+         */
         function renderAuthScreen() {
             elements.authScreen.classList.remove('hidden');
             elements.mainApp.classList.add('hidden');
             elements.taskScreen.classList.add('hidden');
+            elements.profileModal.classList.add('hidden'); // Ensure modal is hidden
             elements.authForm.reset(); // Clear form fields
-            clearAuthError();
+            clearAuthError(); // Clear auth error messages
             elements.authTitle.textContent = 'Login';
             elements.toggleAuth.textContent = 'Create new account';
-            elements.nameField.classList.add('hidden');
+            elements.nameField.classList.add('hidden'); // Hide name field for login
+            // Clear header profile pic display on logout
+            elements.headerProfilePic.classList.add('hidden');
+            elements.headerProfilePic.src = '';
+            elements.profileInitial.classList.remove('hidden');
+            elements.profileInitial.textContent = 'U'; // Reset to default initial
         }
 
+        /**
+         * Renders the main application dashboard, showing either user or admin content.
+         */
         function renderMainApp() {
             if (!state.currentUser) {
-                renderAuthScreen();
+                renderAuthScreen(); // Redirect to auth if no current user
                 return;
             }
 
+            // Hide all other main screens
             elements.authScreen.classList.add('hidden');
             elements.taskScreen.classList.add('hidden');
-            elements.mainApp.classList.remove('hidden');
+            elements.profileModal.classList.add('hidden'); // Ensure modal is hidden
+            elements.mainApp.classList.remove('hidden'); // Show main app
 
-            elements.profileInitial.textContent = state.currentUser.name ? state.currentUser.name.charAt(0).toUpperCase() : 'U';
+            // Update profile button in header
+            if (state.currentUser.profilePicture) {
+                elements.headerProfilePic.src = state.currentUser.profilePicture;
+                elements.headerProfilePic.classList.remove('hidden');
+                elements.profileInitial.classList.add('hidden');
+            } else {
+                elements.headerProfilePic.src = '';
+                elements.headerProfilePic.classList.add('hidden');
+                elements.profileInitial.classList.remove('hidden');
+                elements.profileInitial.textContent = state.currentUser.name ? state.currentUser.name.charAt(0).toUpperCase() : 'U';
+            }
 
-            // Show/hide admin content
+            // Render specific content based on user role
             if (state.currentUser.isAdmin) {
                 elements.adminContent.classList.remove('hidden');
                 elements.userContent.classList.add('hidden');
@@ -594,17 +826,21 @@
             }
         }
 
+        /**
+         * Renders the user-specific dashboard content, including the leaderboard.
+         */
         function renderUserDashboard() {
-            // Update leaderboard
-            elements.leaderboard.innerHTML = '';
+            elements.leaderboard.innerHTML = ''; // Clear existing leaderboard
+            // Filter and sort users for the leaderboard (excluding admin)
             const sortedUsers = [...state.users]
-                .filter(u => !u.isAdmin) // Only show regular users on user leaderboard
-                .sort((a, b) => b.points - a.points);
+                .filter(u => !u.isAdmin)
+                .sort((a, b) => b.points - a.points); // Sort by points descending
             
             if (sortedUsers.length > 0) {
                 sortedUsers.forEach((user, index) => {
                     const li = document.createElement('li');
-                    li.className = `flex justify-between items-center py-2 ${user.id === state.currentUser.id ? 'font-bold text-blue-700' : ''}`;
+                    // Highlight current user in leaderboard
+                    li.className = `flex justify-between items-center py-2 ${user.id === state.currentUser.id ? 'font-bold text-blue-700' : 'text-gray-800'}`;
                     li.innerHTML = `
                         <span>${index + 1}. ${user.name}</span>
                         <span>${user.points} points</span>
@@ -616,33 +852,38 @@
             }
         }
 
+        /**
+         * Renders the admin dashboard, showing all non-admin users and their data.
+         */
         function renderAdminDashboard() {
-            elements.adminUsersList.innerHTML = '';
+            elements.adminUsersList.innerHTML = ''; // Clear existing list
             const nonAdminUsers = state.users.filter(user => !user.isAdmin);
 
             if (nonAdminUsers.length > 0) {
                 nonAdminUsers.forEach(user => {
                     const row = document.createElement('tr');
-                    row.className = 'border-b';
+                    row.className = 'border-b border-gray-200 hover:bg-gray-50 transition-colors';
                     row.innerHTML = `
-                        <td class="p-3">${user.name} (${user.email})</td>
-                        <td class="p-3">${user.documents.length}</td>
-                        <td class="p-3">${user.points}</td>
+                        <td class="p-3 text-gray-700 font-medium">${user.name} (${user.email})</td>
+                        <td class="p-3 text-gray-600">${user.documents.length}</td>
+                        <td class="p-3 text-blue-600 font-semibold">${user.points}</td>
                         <td class="p-3">
-                            <button data-user-id="${user.id}" class="admin-add-user-points bg-green-500 text-white px-3 py-1 rounded text-sm mr-2 btn-hover">Add 5</button>
-                            <button data-user-id="${user.id}" class="admin-reset-user-points bg-red-500 text-white px-3 py-1 rounded text-sm btn-hover">Reset</button>
+                            <button data-user-id="${user.id}" class="admin-add-user-points bg-green-500 text-white px-3 py-1 rounded text-sm mr-2 btn-hover hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 touch-target">Add 5</button>
+                            <button data-user-id="${user.id}" class="admin-reset-user-points bg-red-500 text-white px-3 py-1 rounded text-sm btn-hover hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 touch-target">Reset</button>
                         </td>
                     `;
                     elements.adminUsersList.appendChild(row);
                 });
 
-                // Add event listeners for individual user actions in admin dashboard
+                // Attach event listeners to dynamically created buttons
                 document.querySelectorAll('.admin-add-user-points').forEach(button => {
                     button.addEventListener('click', (e) => {
                         const userId = e.target.dataset.userId;
                         const user = state.users.find(u => u.id === userId);
                         if (user) {
                             user.points += 5;
+                            const task = user.tasks.find(t => t.id === 'python');
+                            if (task) task.points += 5;
                             saveUsersToLocalStorage();
                             showToast(`Added 5 points to ${user.name}`, 'green');
                             renderAdminDashboard(); // Re-render to update points
@@ -655,14 +896,15 @@
                         const userId = e.target.dataset.userId;
                         const user = state.users.find(u => u.id === userId);
                         if (user) {
+                            // Instead of confirm(), directly proceed with action and provide toast feedback
                             user.points = 0;
-                            user.documents = []; // Also reset documents for a clean slate
+                            user.documents = []; 
                             user.tasks.forEach(task => { // Reset task progress
                                 task.completed = false;
                                 task.points = 0;
                             });
                             saveUsersToLocalStorage();
-                            showToast(`Reset ${user.name}'s data`, 'red');
+                            showToast(`Reset all data for ${user.name}`, 'red');
                             renderAdminDashboard(); // Re-render to update points
                         }
                     });
@@ -673,20 +915,25 @@
             }
         }
 
-
+        /**
+         * Renders the specific task screen, showing user's progress and documents.
+         */
         function renderTaskScreen() {
             if (!state.currentUser) {
                 renderAuthScreen();
                 return;
             }
+            // Hide other main screens
             elements.authScreen.classList.add('hidden');
             elements.mainApp.classList.add('hidden');
-            elements.taskScreen.classList.remove('hidden');
+            elements.profileModal.classList.add('hidden'); // Ensure modal is hidden
+            elements.taskScreen.classList.remove('hidden'); // Show task screen
 
             const pythonTask = state.currentUser.tasks.find(t => t.id === 'python');
             if (pythonTask) {
                 elements.taskPoints.textContent = pythonTask.points;
                 elements.taskCompleted.textContent = pythonTask.completed ? 'Yes' : 'No';
+                // Apply color based on task completion status
                 elements.taskCompleted.className = pythonTask.completed ? 'text-2xl font-bold text-green-600' : 'text-2xl font-bold text-red-500';
             }
 
@@ -694,59 +941,65 @@
         }
 
         /* ----- Event Listeners Setup ----- */
+
+        /**
+         * Sets up all global event listeners for the application.
+         */
         function setupEventListeners() {
-            // Auth Screen
+            // Auth Screen Listeners
             elements.authForm.addEventListener('submit', handleAuthSubmit);
             elements.toggleAuth.addEventListener('click', toggleAuthMode);
 
-            // Main App Header
+            // Main App Header Listeners
             elements.logoutBtn.addEventListener('click', logout);
-            // Profile button logic can be added here, e.g., to show a profile modal
-            elements.profileBtn.addEventListener('click', () => {
-                showToast(`Logged in as ${state.currentUser.name} (${state.currentUser.email})`, 'blue');
-            });
+            elements.profileBtn.addEventListener('click', showProfileModal); // Open profile modal on click
 
-            // User Content
+            // Profile Modal Listeners
+            elements.closeProfileModalBtn.addEventListener('click', hideProfileModal); // Close button (X)
+            elements.modalCloseBtn.addEventListener('click', hideProfileModal); // Close button (Close)
+            elements.profilePicInputModal.addEventListener('change', handleProfilePicUpload); // Handle profile pic upload
+
+            // User Content Listeners
             elements.goToTask.addEventListener('click', renderTaskScreen);
 
-            // Task Screen
+            // Task Screen Listeners
             elements.backBtn.addEventListener('click', renderMainApp);
-            setupFileUpload(); // Set up file input and upload button listeners
+            setupFileUpload(); // Setup for PDF file uploads
 
-            // Admin Actions
+            // Admin Actions Listeners (for overall actions)
             elements.adminAddPoints.addEventListener('click', () => {
                 state.users.forEach(user => {
                     if (!user.isAdmin) {
                         user.points += 5;
                         const task = user.tasks.find(t => t.id === 'python');
-                        if (task) task.points += 5; // Also add points to user's task
+                        if (task) task.points += 5; 
                     }
                 });
                 saveUsersToLocalStorage();
                 showToast('+5 points to all regular users!', 'green');
-                renderAdminDashboard();
+                renderAdminDashboard(); // Re-render admin dashboard to show updated points
             });
 
             elements.adminResetPoints.addEventListener('click', () => {
-                if (confirm('Are you sure you want to reset points and documents for ALL regular users? This cannot be undone.')) {
-                    state.users.forEach(user => {
-                        if (!user.isAdmin) {
-                            user.points = 0;
-                            user.documents = [];
-                            user.tasks.forEach(task => {
-                                task.completed = false;
-                                task.points = 0;
-                            });
-                        }
-                    });
-                    saveUsersToLocalStorage();
-                    showToast('All regular user data reset!', 'red');
-                    renderAdminDashboard();
-                }
+                // Replaced confirm() with direct action, assuming the user understands its impact from button label
+                showToast('Resetting all regular user data...', 'red');
+                state.users.forEach(user => {
+                    if (!user.isAdmin) {
+                        user.points = 0;
+                        user.documents = [];
+                        user.tasks.forEach(task => {
+                            task.completed = false;
+                            task.points = 0;
+                        });
+                    }
+                });
+                saveUsersToLocalStorage();
+                showToast('All regular user data reset!', 'red');
+                renderAdminDashboard(); // Re-render admin dashboard
             });
         }
 
-        // Initialize the app and set up event listeners when the DOM is ready
+        // Initialize the application and set up all event listeners when the DOM is fully loaded
         document.addEventListener('DOMContentLoaded', () => {
             initializeApp();
             setupEventListeners();
