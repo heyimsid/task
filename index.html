@@ -43,12 +43,45 @@
             text-align: center;
             cursor: pointer;
         }
+
+        /* Toast Notification Styles */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none; /* Allow clicks to pass through */
+        }
+        .toast {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transform: translateY(-20px);
+            animation: slideIn 0.3s forwards, fadeOut 0.5s 2.5s forwards;
+            pointer-events: auto; /* Re-enable clicks for the toast itself if needed (though usually not for toasts) */
+        }
+        .toast.red { background-color: #ef4444; }
+        .toast.green { background-color: #22c55e; }
+        .toast.blue { background-color: #3b82f6; }
+        .toast.purple { background-color: #8b5cf6; }
+
+        @keyframes slideIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateY(-20px); }
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
     <div id="app" class="container mx-auto px-4 py-6 max-w-4xl">
         
-        <!-- Auth Screen -->
         <div id="auth-screen" class="min-h-screen flex items-center justify-center fade-in">
             <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
                 <h2 id="auth-title" class="text-2xl font-bold text-center mb-6">Login</h2>
@@ -78,9 +111,7 @@
             </div>
         </div>
 
-        <!-- Main App -->
         <div id="main-app" class="hidden fade-in">
-            <!-- Header -->
             <header class="bg-white p-4 rounded-xl shadow-md mb-6 flex justify-between items-center">
                 <h1 class="text-xl font-bold">Task Monitor Pro</h1>
                 <div class="flex items-center space-x-2">
@@ -93,7 +124,6 @@
                 </div>
             </header>
 
-            <!-- User Content -->
             <div id="user-content">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="bg-white p-6 rounded-xl shadow-md">
@@ -110,13 +140,11 @@
                     <div class="bg-white p-6 rounded-xl shadow-md">
                         <h3 class="text-lg font-semibold mb-3">Leaderboard</h3>
                         <ul id="leaderboard" class="divide-y">
-                            <!-- Dynamic content -->
-                        </ul>
+                            </ul>
                     </div>
                 </div>
             </div>
 
-            <!-- Admin Content -->
             <div id="admin-content" class="hidden">
                 <div class="bg-white p-6 rounded-xl shadow-md mb-6">
                     <h2 class="text-xl font-bold mb-4 text-purple-700">Admin Dashboard</h2>
@@ -132,8 +160,7 @@
                                 </tr>
                             </thead>
                             <tbody id="admin-users-list">
-                                <!-- Dynamic content -->
-                            </tbody>
+                                </tbody>
                         </table>
                     </div>
 
@@ -152,7 +179,6 @@
             </div>
         </div>
 
-        <!-- Task Screen -->
         <div id="task-screen" class="hidden fade-in">
             <div class="bg-white p-6 rounded-xl shadow-md mb-4">
                 <div class="flex justify-between items-center mb-4">
@@ -185,8 +211,7 @@
                         <h3 class="font-semibold text-lg mb-4">Your Documents</h3>
                         <div id="document-container">
                             <div id="document-grid" class="document-grid mb-6">
-                                <!-- Documents will appear here -->
-                            </div>
+                                </div>
                             
                             <input type="file" id="file-input" accept=".pdf">
                             <label for="file-input" class="file-upload-label mb-4">
@@ -207,6 +232,8 @@
             </div>
         </div>
     </div>
+
+    <div id="toast-container" class="toast-container"></div>
 
     <script>
         // App State
@@ -264,8 +291,37 @@
             // Admin elements
             adminUsersList: document.getElementById('admin-users-list'),
             adminAddPoints: document.getElementById('admin-add-points'),
-            adminResetPoints: document.getElementById('admin-reset-points')
+            adminResetPoints: document.getElementById('admin-reset-points'),
+
+            // Toast Container
+            toastContainer: document.getElementById('toast-container')
         };
+
+        /* ----- Utility Functions ----- */
+        function saveUsersToLocalStorage() {
+            localStorage.setItem('users', JSON.stringify(state.users));
+        }
+
+        function clearAuthError() {
+            elements.authError.textContent = '';
+            elements.authError.classList.add('hidden');
+        }
+
+        function showAuthError(message) {
+            elements.authError.textContent = message;
+            elements.authError.classList.remove('hidden');
+        }
+
+        function showToast(message, type = 'default') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            elements.toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000); // Toast disappears after 3 seconds
+        }
 
         /* ----- Initialization ----- */
         function initializeApp() {
@@ -287,10 +343,22 @@
                 saveUsersToLocalStorage();
             }
             
-            // Load from localStorage
+            // Load from localStorage (this is redundant if initializeApp is called first, but harmless)
             if (localStorage.getItem('users')) {
                 state.users = JSON.parse(localStorage.getItem('users'));
             }
+            
+            // Attempt to restore session
+            const storedCurrentUserEmail = localStorage.getItem('currentUserEmail');
+            if (storedCurrentUserEmail) {
+                const user = state.users.find(u => u.email === storedCurrentUserEmail);
+                if (user) {
+                    state.currentUser = user;
+                    renderMainApp();
+                    return;
+                }
+            }
+            renderAuthScreen(); // Show auth screen if no current user
         }
 
         /* ----- Auth Functions ----- */
@@ -341,6 +409,7 @@
             
             state.users.push(newUser);
             state.currentUser = newUser;
+            localStorage.setItem('currentUserEmail', newUser.email); // Store current user for session
             saveUsersToLocalStorage();
             showToast('Account created!', 'green');
             renderMainApp();
@@ -349,9 +418,9 @@
         function handleLogin(email, password) {
             // Check admin credentials first
             if (email === state.adminCredentials.email && password === state.adminCredentials.password) {
-                let adminUser = state.users.find(u => u.email === email);
+                let adminUser = state.users.find(u => u.email === email && u.isAdmin);
                 
-                // Create admin user if doesn't exist in localStorage
+                // This part ensures admin user exists and has correct structure (safety net)
                 if (!adminUser) {
                     adminUser = {
                         id: 'admin-' + Date.now(),
@@ -362,10 +431,15 @@
                         documents: []
                     };
                     state.users.push(adminUser);
-                    saveUsersToLocalStorage();
+                } else {
+                    // Update admin details in case they were altered in localStorage
+                    adminUser.name = state.adminCredentials.name;
+                    adminUser.password = state.adminCredentials.password; // Ensure password is correct if localStorage was modified
                 }
-                
+
                 state.currentUser = adminUser;
+                localStorage.setItem('currentUserEmail', adminUser.email); // Store current user for session
+                saveUsersToLocalStorage(); // Persist any admin changes or new admin creation
                 showToast('Welcome Admin!', 'purple');
                 renderMainApp();
                 return;
@@ -378,6 +452,7 @@
             }
             
             state.currentUser = user;
+            localStorage.setItem('currentUserEmail', user.email); // Store current user for session
             showToast(`Welcome back ${user.name}!`, 'green');
             renderMainApp();
         }
@@ -392,6 +467,7 @@
 
         function logout() {
             state.currentUser = null;
+            localStorage.removeItem('currentUserEmail'); // Clear current user from session
             showToast('Logged out successfully!', 'blue');
             renderAuthScreen();
         }
@@ -404,6 +480,8 @@
                 
                 if (file.type !== 'application/pdf') {
                     showToast('Please upload a PDF file', 'red');
+                    elements.uploadBtn.classList.add('hidden'); // Hide upload button if wrong file type
+                    state.selectedFile = null; // Clear selected file
                     return;
                 }
                 
@@ -416,7 +494,7 @@
         }
 
         function uploadDocument() {
-            if (!state.selectedFile) return;
+            if (!state.selectedFile || !state.currentUser) return;
             
             // Create a unique filename with date
             const now = new Date();
@@ -425,15 +503,12 @@
             const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][now.getDay()];
             const docName = `Day ${state.currentUser.documents.length + 1} (${dayName} ${day}.${month})`;
             
-            // In a real app, you would upload to a server here
-            // For this demo, we'll store metadata locally
-            
             const newDoc = {
                 id: 'doc-' + Date.now(),
                 name: docName,
                 filename: state.selectedFile.name,
                 size: state.selectedFile.size,
-                uploadedAt: new Date().toISOString(),
+                uploadedAt: now.toISOString(),
                 day: state.currentUser.documents.length + 1
             };
             
@@ -445,31 +520,238 @@
             const task = state.currentUser.tasks.find(t => t.id === 'python');
             if (task) {
                 task.points += 5;
+                // You might mark task as completed after a certain number of documents/points
+                if (task.points >= 20 && !task.completed) { // Example: complete task after 20 points
+                    task.completed = true;
+                    showToast('Python Task Completed!', 'green');
+                }
             }
             
             saveUsersToLocalStorage();
-            renderTaskScreen
-    // Add these lines at the end of your script, or within an initialization function
+            showToast('Document uploaded and points awarded!', 'green');
+            elements.fileInput.value = ''; // Clear file input
+            elements.uploadBtn.classList.add('hidden'); // Hide upload button
+            state.selectedFile = null; // Clear selected file state
+            renderTaskScreen(); // Re-render to show updated documents and points
+        }
 
-// Event listener for the form submission (Login/Sign Up button)
-elements.authForm.addEventListener('submit', handleAuthSubmit);
+        function renderDocuments() {
+            elements.documentGrid.innerHTML = ''; // Clear existing documents
+            if (state.currentUser && state.currentUser.documents.length > 0) {
+                state.currentUser.documents.forEach(doc => {
+                    const docCard = document.createElement('div');
+                    docCard.className = 'document-card cursor-pointer';
+                    docCard.innerHTML = `
+                        <div class="pdf-icon">📄</div>
+                        <p class="text-sm font-medium text-gray-800">${doc.name}</p>
+                        <p class="text-xs text-gray-500">${(doc.size / 1024).toFixed(1)} KB</p>
+                    `;
+                    // In a real app, clicking this would open/download the document
+                    docCard.addEventListener('click', () => {
+                        showToast(`Viewing: ${doc.filename}`, 'blue');
+                        // For a real PDF, you'd navigate to its URL or trigger download
+                    });
+                    elements.documentGrid.appendChild(docCard);
+                });
+            } else {
+                elements.documentGrid.innerHTML = '<p class="text-gray-500 text-center col-span-full">No documents uploaded yet.</p>';
+            }
+        }
 
-// Event listener for the "Create new account" / "Have an account? Login" link
-elements.toggleAuth.addEventListener('click', toggleAuthMode);
+        /* ----- Render Functions (UI Updates) ----- */
+        function renderAuthScreen() {
+            elements.authScreen.classList.remove('hidden');
+            elements.mainApp.classList.add('hidden');
+            elements.taskScreen.classList.add('hidden');
+            elements.authForm.reset(); // Clear form fields
+            clearAuthError();
+            elements.authTitle.textContent = 'Login';
+            elements.toggleAuth.textContent = 'Create new account';
+            elements.nameField.classList.add('hidden');
+        }
 
-// Event listener for the logout button (if it's not already handled elsewhere)
-elements.logoutBtn.addEventListener('click', logout);
+        function renderMainApp() {
+            if (!state.currentUser) {
+                renderAuthScreen();
+                return;
+            }
 
-// Event listener for the "Go to Task" button (if it's not already handled elsewhere)
-elements.goToTask.addEventListener('click', () => {
-    renderTaskScreen();
-});
+            elements.authScreen.classList.add('hidden');
+            elements.taskScreen.classList.add('hidden');
+            elements.mainApp.classList.remove('hidden');
 
-// Event listener for the "Back" button on the task screen
-elements.backBtn.addEventListener('click', () => {
-    renderMainApp(); // Or renderUserContent() if you only want to show user content
-});
+            elements.profileInitial.textContent = state.currentUser.name ? state.currentUser.name.charAt(0).toUpperCase() : 'U';
 
-// Make sure to call initializeApp() and renderAuthScreen() initially
-initializeApp();
-renderAuthScreen(); // This will make sure the auth screen is visible first
+            // Show/hide admin content
+            if (state.currentUser.isAdmin) {
+                elements.adminContent.classList.remove('hidden');
+                elements.userContent.classList.add('hidden');
+                renderAdminDashboard();
+            } else {
+                elements.adminContent.classList.add('hidden');
+                elements.userContent.classList.remove('hidden');
+                renderUserDashboard();
+            }
+        }
+
+        function renderUserDashboard() {
+            // Update leaderboard
+            elements.leaderboard.innerHTML = '';
+            const sortedUsers = [...state.users]
+                .filter(u => !u.isAdmin) // Only show regular users on user leaderboard
+                .sort((a, b) => b.points - a.points);
+            
+            if (sortedUsers.length > 0) {
+                sortedUsers.forEach((user, index) => {
+                    const li = document.createElement('li');
+                    li.className = `flex justify-between items-center py-2 ${user.id === state.currentUser.id ? 'font-bold text-blue-700' : ''}`;
+                    li.innerHTML = `
+                        <span>${index + 1}. ${user.name}</span>
+                        <span>${user.points} points</span>
+                    `;
+                    elements.leaderboard.appendChild(li);
+                });
+            } else {
+                elements.leaderboard.innerHTML = '<li class="text-gray-500 text-center py-2">No users on leaderboard yet.</li>';
+            }
+        }
+
+        function renderAdminDashboard() {
+            elements.adminUsersList.innerHTML = '';
+            const nonAdminUsers = state.users.filter(user => !user.isAdmin);
+
+            if (nonAdminUsers.length > 0) {
+                nonAdminUsers.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b';
+                    row.innerHTML = `
+                        <td class="p-3">${user.name} (${user.email})</td>
+                        <td class="p-3">${user.documents.length}</td>
+                        <td class="p-3">${user.points}</td>
+                        <td class="p-3">
+                            <button data-user-id="${user.id}" class="admin-add-user-points bg-green-500 text-white px-3 py-1 rounded text-sm mr-2 btn-hover">Add 5</button>
+                            <button data-user-id="${user.id}" class="admin-reset-user-points bg-red-500 text-white px-3 py-1 rounded text-sm btn-hover">Reset</button>
+                        </td>
+                    `;
+                    elements.adminUsersList.appendChild(row);
+                });
+
+                // Add event listeners for individual user actions in admin dashboard
+                document.querySelectorAll('.admin-add-user-points').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const userId = e.target.dataset.userId;
+                        const user = state.users.find(u => u.id === userId);
+                        if (user) {
+                            user.points += 5;
+                            saveUsersToLocalStorage();
+                            showToast(`Added 5 points to ${user.name}`, 'green');
+                            renderAdminDashboard(); // Re-render to update points
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.admin-reset-user-points').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const userId = e.target.dataset.userId;
+                        const user = state.users.find(u => u.id === userId);
+                        if (user) {
+                            user.points = 0;
+                            user.documents = []; // Also reset documents for a clean slate
+                            user.tasks.forEach(task => { // Reset task progress
+                                task.completed = false;
+                                task.points = 0;
+                            });
+                            saveUsersToLocalStorage();
+                            showToast(`Reset ${user.name}'s data`, 'red');
+                            renderAdminDashboard(); // Re-render to update points
+                        }
+                    });
+                });
+
+            } else {
+                elements.adminUsersList.innerHTML = '<tr><td colspan="4" class="p-3 text-center text-gray-500">No regular users registered.</td></tr>';
+            }
+        }
+
+
+        function renderTaskScreen() {
+            if (!state.currentUser) {
+                renderAuthScreen();
+                return;
+            }
+            elements.authScreen.classList.add('hidden');
+            elements.mainApp.classList.add('hidden');
+            elements.taskScreen.classList.remove('hidden');
+
+            const pythonTask = state.currentUser.tasks.find(t => t.id === 'python');
+            if (pythonTask) {
+                elements.taskPoints.textContent = pythonTask.points;
+                elements.taskCompleted.textContent = pythonTask.completed ? 'Yes' : 'No';
+                elements.taskCompleted.className = pythonTask.completed ? 'text-2xl font-bold text-green-600' : 'text-2xl font-bold text-red-500';
+            }
+
+            renderDocuments(); // Render user's uploaded documents
+        }
+
+        /* ----- Event Listeners Setup ----- */
+        function setupEventListeners() {
+            // Auth Screen
+            elements.authForm.addEventListener('submit', handleAuthSubmit);
+            elements.toggleAuth.addEventListener('click', toggleAuthMode);
+
+            // Main App Header
+            elements.logoutBtn.addEventListener('click', logout);
+            // Profile button logic can be added here, e.g., to show a profile modal
+            elements.profileBtn.addEventListener('click', () => {
+                showToast(`Logged in as ${state.currentUser.name} (${state.currentUser.email})`, 'blue');
+            });
+
+            // User Content
+            elements.goToTask.addEventListener('click', renderTaskScreen);
+
+            // Task Screen
+            elements.backBtn.addEventListener('click', renderMainApp);
+            setupFileUpload(); // Set up file input and upload button listeners
+
+            // Admin Actions
+            elements.adminAddPoints.addEventListener('click', () => {
+                state.users.forEach(user => {
+                    if (!user.isAdmin) {
+                        user.points += 5;
+                        const task = user.tasks.find(t => t.id === 'python');
+                        if (task) task.points += 5; // Also add points to user's task
+                    }
+                });
+                saveUsersToLocalStorage();
+                showToast('+5 points to all regular users!', 'green');
+                renderAdminDashboard();
+            });
+
+            elements.adminResetPoints.addEventListener('click', () => {
+                if (confirm('Are you sure you want to reset points and documents for ALL regular users? This cannot be undone.')) {
+                    state.users.forEach(user => {
+                        if (!user.isAdmin) {
+                            user.points = 0;
+                            user.documents = [];
+                            user.tasks.forEach(task => {
+                                task.completed = false;
+                                task.points = 0;
+                            });
+                        }
+                    });
+                    saveUsersToLocalStorage();
+                    showToast('All regular user data reset!', 'red');
+                    renderAdminDashboard();
+                }
+            });
+        }
+
+        // Initialize the app and set up event listeners when the DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeApp();
+            setupEventListeners();
+        });
+
+    </script>
+</body>
+</html>
