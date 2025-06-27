@@ -449,3 +449,27 @@
             
             saveUsersToLocalStorage();
             renderTaskScreen
+    // Add these lines at the end of your script, or within an initialization function
+
+// Event listener for the form submission (Login/Sign Up button)
+elements.authForm.addEventListener('submit', handleAuthSubmit);
+
+// Event listener for the "Create new account" / "Have an account? Login" link
+elements.toggleAuth.addEventListener('click', toggleAuthMode);
+
+// Event listener for the logout button (if it's not already handled elsewhere)
+elements.logoutBtn.addEventListener('click', logout);
+
+// Event listener for the "Go to Task" button (if it's not already handled elsewhere)
+elements.goToTask.addEventListener('click', () => {
+    renderTaskScreen();
+});
+
+// Event listener for the "Back" button on the task screen
+elements.backBtn.addEventListener('click', () => {
+    renderMainApp(); // Or renderUserContent() if you only want to show user content
+});
+
+// Make sure to call initializeApp() and renderAuthScreen() initially
+initializeApp();
+renderAuthScreen(); // This will make sure the auth screen is visible first
